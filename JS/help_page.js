@@ -86,11 +86,14 @@ supportForm.addEventListener('submit', function(e) {
   fetch(`${API_BASE_URL}/HelpPage`, {
     method: 'POST',
     headers: headers,
-    body: JSON.stringify(helpPageData)
+    body: JSON.stringify(helpPageData),
+    mode: 'cors' // Explicitly set CORS mode
   })
   .then(response => {
     if (!response.ok) {
-      return response.json().then(err => { throw err; });
+      return response.json().then(err => { 
+        throw new Error(err.message || `Server error: ${response.status}`);
+      });
     }
     return response.json();
   })
@@ -103,7 +106,15 @@ supportForm.addEventListener('submit', function(e) {
   })
   .catch(error => {
     console.error('Help page submission error:', error);
-    const errorMsg = error.message || 'Failed to submit support request. Please try again.';
+    
+    // Check if it's a CORS error
+    let errorMsg;
+    if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+      errorMsg = 'CORS Error: The API server needs to allow requests from this origin. Please contact the administrator or check if the endpoint is accessible.';
+    } else {
+      errorMsg = error.message || 'Failed to submit support request. Please try again.';
+    }
+    
     showNotification(errorMsg, 'error');
   });
 });
