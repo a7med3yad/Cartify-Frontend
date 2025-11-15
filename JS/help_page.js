@@ -69,6 +69,13 @@ supportForm.addEventListener('submit', async function (e) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  // Debug logging
+  console.log('Submitting help page request:', {
+    url: `${API_BASE_URL}/HelpPage`,
+    data: helpPageData,
+    hasToken: !!token
+  });
+
   try {
     const response = await fetch(`${API_BASE_URL}/HelpPage`, {
       method: 'POST',
@@ -76,9 +83,17 @@ supportForm.addEventListener('submit', async function (e) {
       body: JSON.stringify(helpPageData)
     });
 
+    // Check if response is ok before trying to parse JSON
     if (!response.ok) {
-      const err = await response.json().catch(() => ({ message: "Server Error" }));
-      throw err;
+      let errorMessage = `Server error: ${response.status} ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.title || errorMessage;
+      } catch (parseError) {
+        // If we can't parse the error response, use the status text
+        console.error('Could not parse error response:', parseError);
+      }
+      throw new Error(errorMessage);
     }
 
     const resJson = await response.json();
@@ -88,7 +103,15 @@ supportForm.addEventListener('submit', async function (e) {
 
   } catch (error) {
     console.error("Help page submission error:", error);
-    showNotification(error.message || 'Failed to submit support request. Please try again.', 'error');
+    
+    // Handle CORS and network errors specifically
+    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+      showNotification('Network error: Unable to connect to server. Please check your connection and try again.', 'error');
+    } else if (error.message.includes('CORS')) {
+      showNotification('CORS error: Server configuration issue. Please contact support.', 'error');
+    } else {
+      showNotification(error.message || 'Failed to submit support request. Please try again.', 'error');
+    }
   }
 });
 
