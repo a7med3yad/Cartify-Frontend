@@ -55,7 +55,7 @@ const category = parseInt(document.getElementById('category').value, 10);
   const message = document.getElementById('message').value;
   
   // Validate required fields
-  if (!name || !email || !subject || !category || !message) {
+  if (!name || !email || !subject || isNaN(category) || !message) {
     showNotification('Please fill all required fields', 'error');
     return;
   }
