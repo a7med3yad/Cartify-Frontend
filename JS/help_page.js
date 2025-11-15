@@ -51,7 +51,7 @@ supportForm.addEventListener('submit', function(e) {
   const name = document.getElementById('name').value;
   const email = document.getElementById('email').value;
   const subject = document.getElementById('subject').value;
-  const category = document.getElementById('category').value;
+const category = parseInt(document.getElementById('category').value, 10);
   const message = document.getElementById('message').value;
   
   // Validate required fields
