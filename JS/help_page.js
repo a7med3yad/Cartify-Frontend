@@ -1,11 +1,5 @@
 const API_BASE_URL = 'https://cartify.runasp.net/api';
 
-// Get JWT token if logged in
-function getAuthToken() {
-  const auth = JSON.parse(localStorage.getItem('Auth') || sessionStorage.getItem('Auth') || '{}');
-  return auth.jwt || null;
-}
-
 // Show notification
 function showNotification(message, type = 'success') {
   const notif = $('#notification');
