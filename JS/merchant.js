@@ -20,6 +20,60 @@ $(document).ready(function () {
     return authData.jwt || '';
   }
 
+  // ==================== NOTIFICATION SYSTEM ====================
+  function showNotification(message, type = 'success') {
+    $('.custom-notification').remove();
+    const icon = type === 'success' ? '<i class="bi bi-check-circle-fill"></i>' : 
+                 type === 'error' ? '<i class="bi bi-x-circle-fill"></i>' : 
+                 '<i class="bi bi-info-circle-fill"></i>';
+    const notification = $(`
+      <div class="custom-notification ${type}">
+        <div class="notification-content">
+          <span class="notification-icon">${icon}</span>
+          <span class="notification-message">${message}</span>
+          <button class="notification-close"><i class="bi bi-x"></i></button>
+        </div>
+      </div>
+    `);
+    $('body').append(notification);
+    notification.fadeIn(300);
+    notification.find('.notification-close').on('click', function() {
+      notification.fadeOut(300, function() { $(this).remove(); });
+    });
+    setTimeout(() => {
+      notification.fadeOut(300, function() { $(this).remove(); });
+    }, 4000);
+  }
+
+  // ==================== CONFIRMATION MODAL ====================
+  function showConfirmModal(title, message, onConfirm) {
+    const modal = $(`
+      <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-warning">
+              <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>${title}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body"><p>${message}</p></div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-danger" id="confirmBtn">Confirm</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+    $('body').append(modal);
+    const bsModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    bsModal.show();
+    $('#confirmBtn').on('click', function() {
+      onConfirm();
+      bsModal.hide();
+    });
+    $('#confirmModal').on('hidden.bs.modal', function() { $(this).remove(); });
+  }
+
   // -------------------- [Initial Content Load] --------------------
   loadDashboard();
 
@@ -45,6 +99,10 @@ $(document).ready(function () {
         break;
       case "Customer":
         loadCustomer();
+        $("#productWizardContainer").hide();
+        break;
+      case "Order":
+        loadOrder();
         $("#productWizardContainer").hide();
         break;
       case "Category":
@@ -921,35 +979,38 @@ $(document).ready(function () {
   };
 
   window.deletePromotion = function(id) {
-    if (confirm('Are you sure you want to delete this promotion?')) {
+    showConfirmModal('Delete Promotion', 'Are you sure you want to delete this promotion?', function() {
       $.ajax({
         url: `${API_BASE_URL}/Promotions/${id}`,
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${getAuthToken()}` },
         success: function() {
           fetchPromotions();
-          alert('Promotion deleted successfully');
+          showNotification('Promotion deleted successfully', 'success');
         },
-        error: function() {
-          alert('Error deleting promotion');
+        error: function(xhr) {
+          showNotification(xhr.responseJSON?.message || 'Error deleting promotion', 'error');
         }
       });
-    }
+    });
   };
 
   window.savePromotion = function() {
+    if (!$('#promotionTitle').val().trim()) {
+      showNotification('Please enter a promotion title', 'error');
+      return;
+    }
     const data = {
       id: $('#promotionId').val() || 0,
-      title: $('#promotionTitle').val(),
-      description: $('#promotionDescription').val(),
-      discount: parseFloat($('#promotionDiscount').val()),
+      title: $('#promotionTitle').val().trim(),
+      description: $('#promotionDescription').val().trim(),
+      discount: parseFloat($('#promotionDiscount').val()) || 0,
       startDate: $('#promotionStartDate').val(),
       endDate: $('#promotionEndDate').val(),
       isActive: $('#promotionIsActive').is(':checked')
     };
     const method = data.id ? 'PUT' : 'POST';
     const url = data.id ? `${API_BASE_URL}/Promotions/${data.id}` : `${API_BASE_URL}/Promotions`;
-    
     $.ajax({
       url: url,
       method: method,
@@ -959,10 +1020,10 @@ $(document).ready(function () {
       success: function() {
         bootstrap.Modal.getInstance(document.getElementById('promotionModal')).hide();
         fetchPromotions();
-        alert('Promotion saved successfully');
+        showNotification(`Promotion ${data.id ? 'updated' : 'created'} successfully`, 'success');
       },
-      error: function() {
-        alert('Error saving promotion');
+      error: function(xhr) {
+        showNotification(xhr.responseJSON?.message || 'Error saving promotion', 'error');
       }
     });
   };
@@ -988,29 +1049,44 @@ $(document).ready(function () {
   function loadCustomer() {
     const html = `
       <div class="section-container">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-4">
           <h2 class="section-title"><i class="bi bi-people me-2"></i>Customer Management</h2>
-          <button class="btn btn-primary" id="btnAddCustomer">
+          <button class="btn btn-primary btn-lg" id="btnAddCustomer">
             <i class="bi bi-plus-circle me-2"></i>Add Customer
           </button>
         </div>
-        <div class="card">
+        <div class="card shadow-sm mb-3">
           <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input type="text" class="form-control" id="customerSearch" placeholder="Search customers...">
+                </div>
+              </div>
+              <div class="col-md-6 text-end">
+                <span class="badge bg-primary" id="customerCount">0 customers</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card shadow-sm">
+          <div class="card-body p-0">
             <div class="table-responsive">
-              <table class="table table-hover" id="customerTable">
+              <table class="table table-hover mb-0" id="customerTable">
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                    <th>Total Orders</th>
-                    <th>Status</th>
-                    <th>Actions</th>
+                    <th><i class="bi bi-hash me-1"></i>ID</th>
+                    <th><i class="bi bi-person me-1"></i>Name</th>
+                    <th><i class="bi bi-envelope me-1"></i>Email</th>
+                    <th><i class="bi bi-telephone me-1"></i>Phone</th>
+                    <th><i class="bi bi-cart me-1"></i>Orders</th>
+                    <th><i class="bi bi-toggle-on me-1"></i>Status</th>
+                    <th class="text-center"><i class="bi bi-gear me-1"></i>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="customerTableBody">
-                  <tr><td colspan="7" class="text-center">Loading...</td></tr>
+                  <tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></td></tr>
                 </tbody>
               </table>
             </div>
@@ -1021,7 +1097,13 @@ $(document).ready(function () {
     $("#dynamicContentContainer").show().html(html);
     fetchCustomers();
     
-    $(document).off('click', '#btnAddCustomer').on('click', '#btnAddCustomer', showCustomerModal);
+    $(document).off('click', '#btnAddCustomer').on('click', '#btnAddCustomer', () => showCustomerModal());
+    $(document).off('input', '#customerSearch').on('input', '#customerSearch', function() {
+      const term = $(this).val().toLowerCase();
+      $('#customerTableBody tr').each(function() {
+        $(this).toggle($(this).text().toLowerCase().includes(term));
+      });
+    });
   }
 
   function fetchCustomers() {
@@ -1040,86 +1122,99 @@ $(document).ready(function () {
 
   function renderCustomersTable(customers) {
     if (!customers || customers.length === 0) {
-      $("#customerTableBody").html('<tr><td colspan="7" class="text-center">No customers found</td></tr>');
+      $("#customerTableBody").html(`
+        <tr><td colspan="7" class="text-center py-5">
+          <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+          <p class="mt-3 text-muted">No customers found</p>
+        </td></tr>
+      `);
+      $('#customerCount').text('0 customers');
       return;
     }
     let html = '';
     customers.forEach(customer => {
+      const name = customer.name || (customer.firstName && customer.lastName ? `${customer.firstName} ${customer.lastName}` : 'N/A');
       html += `
-        <tr>
-          <td>${customer.id || 'N/A'}</td>
-          <td>${customer.name || customer.firstName + ' ' + customer.lastName || 'N/A'}</td>
-          <td>${customer.email || 'N/A'}</td>
-          <td>${customer.phone || 'N/A'}</td>
-          <td>${customer.totalOrders || 0}</td>
-          <td><span class="badge ${customer.isActive ? 'bg-success' : 'bg-secondary'}">${customer.isActive ? 'Active' : 'Inactive'}</span></td>
+        <tr class="table-row-hover">
+          <td><strong>#${customer.id || 'N/A'}</strong></td>
           <td>
-            <button class="btn btn-sm btn-primary me-1" onclick="editCustomer(${customer.id})">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-sm btn-danger" onclick="deleteCustomer(${customer.id})">
-              <i class="bi bi-trash"></i>
-            </button>
+            <div class="d-flex align-items-center">
+              <i class="bi bi-person-circle me-2" style="font-size: 1.5rem; color: var(--greenNormal);"></i>
+              <span>${name}</span>
+            </div>
+          </td>
+          <td><a href="mailto:${customer.email || ''}" class="text-decoration-none">${customer.email || 'N/A'}</a></td>
+          <td>${customer.phone || '<span class="text-muted">-</span>'}</td>
+          <td><span class="badge bg-info">${customer.totalOrders || 0}</span></td>
+          <td><span class="badge ${customer.isActive ? 'bg-success' : 'bg-secondary'}">${customer.isActive ? '<i class="bi bi-check-circle me-1"></i>Active' : '<i class="bi bi-x-circle me-1"></i>Inactive'}</span></td>
+          <td class="text-center">
+            <div class="btn-group" role="group">
+              <button class="btn btn-sm btn-outline-primary" onclick="editCustomer(${customer.id})" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteCustomer(${customer.id})" title="Delete">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
           </td>
         </tr>
       `;
     });
     $("#customerTableBody").html(html);
+    $('#customerCount').text(`${customers.length} customer${customers.length !== 1 ? 's' : ''}`);
   }
 
   function showCustomerModal(id = null) {
     const isEdit = id !== null;
-    const modal = `
+    const modal = $(`
       <div class="modal fade" id="customerModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title">${isEdit ? 'Edit' : 'Add'} Customer</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title"><i class="bi bi-${isEdit ? 'pencil' : 'person-plus'} me-2"></i>${isEdit ? 'Edit' : 'Add'} Customer</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
               <form id="customerForm">
                 <input type="hidden" id="customerId" value="${id || ''}">
                 <div class="row">
                   <div class="col-md-6 mb-3">
-                    <label class="form-label">First Name</label>
-                    <input type="text" class="form-control" id="customerFirstName" required>
+                    <label class="form-label"><i class="bi bi-person me-1"></i>First Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="customerFirstName" placeholder="Enter first name" required>
                   </div>
                   <div class="col-md-6 mb-3">
-                    <label class="form-label">Last Name</label>
-                    <input type="text" class="form-control" id="customerLastName" required>
+                    <label class="form-label"><i class="bi bi-person me-1"></i>Last Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="customerLastName" placeholder="Enter last name" required>
                   </div>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label">Email</label>
-                  <input type="email" class="form-control" id="customerEmail" required>
+                  <label class="form-label"><i class="bi bi-envelope me-1"></i>Email <span class="text-danger">*</span></label>
+                  <input type="email" class="form-control" id="customerEmail" placeholder="customer@example.com" required>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label">Phone</label>
-                  <input type="tel" class="form-control" id="customerPhone">
+                  <label class="form-label"><i class="bi bi-telephone me-1"></i>Phone</label>
+                  <input type="tel" class="form-control" id="customerPhone" placeholder="+1234567890">
                 </div>
                 <div class="mb-3">
-                  <div class="form-check">
+                  <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="customerIsActive" checked>
-                    <label class="form-check-label" for="customerIsActive">Active</label>
+                    <label class="form-check-label" for="customerIsActive"><i class="bi bi-toggle-on me-1"></i>Active Status</label>
                   </div>
                 </div>
               </form>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-              <button type="button" class="btn btn-primary" onclick="saveCustomer()">Save</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle me-1"></i>Cancel</button>
+              <button type="button" class="btn btn-primary" onclick="saveCustomer()"><i class="bi bi-check-circle me-1"></i>Save</button>
             </div>
           </div>
         </div>
       </div>
-    `;
+    `);
     $('body').append(modal);
     const bsModal = new bootstrap.Modal(document.getElementById('customerModal'));
     bsModal.show();
-    $('#customerModal').on('hidden.bs.modal', function() {
-      $(this).remove();
-    });
+    $('#customerModal').on('hidden.bs.modal', function() { $(this).remove(); });
     if (isEdit) loadCustomerData(id);
   }
 
@@ -1128,34 +1223,41 @@ $(document).ready(function () {
   };
 
   window.deleteCustomer = function(id) {
-    if (confirm('Are you sure you want to delete this customer?')) {
+    showConfirmModal('Delete Customer', 'Are you sure you want to delete this customer? This action cannot be undone.', function() {
       $.ajax({
         url: `${API_BASE_URL}/Customers/${id}`,
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${getAuthToken()}` },
         success: function() {
           fetchCustomers();
-          alert('Customer deleted successfully');
+          showNotification('Customer deleted successfully', 'success');
         },
-        error: function() {
-          alert('Error deleting customer');
+        error: function(xhr) {
+          showNotification(xhr.responseJSON?.message || 'Error deleting customer', 'error');
         }
       });
-    }
+    });
   };
 
   window.saveCustomer = function() {
+    if (!$('#customerFirstName').val().trim() || !$('#customerLastName').val().trim()) {
+      showNotification('Please fill in all required fields', 'error');
+      return;
+    }
+    if (!$('#customerEmail').val().trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($('#customerEmail').val())) {
+      showNotification('Please enter a valid email address', 'error');
+      return;
+    }
     const data = {
       id: $('#customerId').val() || 0,
-      firstName: $('#customerFirstName').val(),
-      lastName: $('#customerLastName').val(),
-      email: $('#customerEmail').val(),
-      phone: $('#customerPhone').val(),
+      firstName: $('#customerFirstName').val().trim(),
+      lastName: $('#customerLastName').val().trim(),
+      email: $('#customerEmail').val().trim(),
+      phone: $('#customerPhone').val().trim() || null,
       isActive: $('#customerIsActive').is(':checked')
     };
     const method = data.id ? 'PUT' : 'POST';
     const url = data.id ? `${API_BASE_URL}/Customers/${data.id}` : `${API_BASE_URL}/Customers`;
-    
     $.ajax({
       url: url,
       method: method,
@@ -1165,10 +1267,10 @@ $(document).ready(function () {
       success: function() {
         bootstrap.Modal.getInstance(document.getElementById('customerModal')).hide();
         fetchCustomers();
-        alert('Customer saved successfully');
+        showNotification(`Customer ${data.id ? 'updated' : 'created'} successfully`, 'success');
       },
-      error: function() {
-        alert('Error saving customer');
+      error: function(xhr) {
+        showNotification(xhr.responseJSON?.message || 'Error saving customer', 'error');
       }
     });
   };
@@ -1188,6 +1290,278 @@ $(document).ready(function () {
       }
     });
   }
+
+  // ==================== ORDER SECTION ====================
+  function loadOrder() {
+    const html = `
+      <div class="section-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2 class="section-title"><i class="bi bi-cart-check me-2"></i>Order Management</h2>
+        </div>
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-search"></i></span>
+                  <input type="text" class="form-control" id="orderSearch" placeholder="Search orders...">
+                </div>
+              </div>
+              <div class="col-md-4">
+                <select class="form-select" id="orderStatusFilter">
+                  <option value="">All Status</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Processing">Processing</option>
+                  <option value="Shipped">Shipped</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div class="col-md-4 text-end">
+                <span class="badge bg-primary" id="orderCount">0 orders</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card shadow-sm">
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0" id="orderTable">
+                <thead>
+                  <tr>
+                    <th><i class="bi bi-hash me-1"></i>Order ID</th>
+                    <th><i class="bi bi-person me-1"></i>Customer</th>
+                    <th><i class="bi bi-calendar me-1"></i>Date</th>
+                    <th><i class="bi bi-currency-dollar me-1"></i>Total</th>
+                    <th><i class="bi bi-tag me-1"></i>Status</th>
+                    <th class="text-center"><i class="bi bi-gear me-1"></i>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="orderTableBody">
+                  <tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    $("#dynamicContentContainer").show().html(html);
+    fetchOrders();
+    
+    $(document).off('input', '#orderSearch').on('input', '#orderSearch', function() {
+      filterOrders();
+    });
+    $(document).off('change', '#orderStatusFilter').on('change', '#orderStatusFilter', function() {
+      filterOrders();
+    });
+  }
+
+  function fetchOrders() {
+    $.ajax({
+      url: `${API_BASE_URL}/Orders`,
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+      success: function(data) {
+        renderOrdersTable(data);
+      },
+      error: function() {
+        $("#orderTableBody").html('<tr><td colspan="6" class="text-center text-danger">Error loading orders</td></tr>');
+      }
+    });
+  }
+
+  function renderOrdersTable(orders) {
+    if (!orders || orders.length === 0) {
+      $("#orderTableBody").html(`
+        <tr>
+          <td colspan="6" class="text-center py-5">
+            <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+            <p class="mt-3 text-muted">No orders found</p>
+          </td>
+        </tr>
+      `);
+      $('#orderCount').text('0 orders');
+      return;
+    }
+    let html = '';
+    orders.forEach(order => {
+      const orderDate = order.orderDate ? new Date(order.orderDate).toLocaleDateString() : 'N/A';
+      const statusClass = {
+        'Pending': 'bg-warning',
+        'Processing': 'bg-info',
+        'Shipped': 'bg-primary',
+        'Delivered': 'bg-success',
+        'Cancelled': 'bg-danger'
+      }[order.status] || 'bg-secondary';
+      
+      html += `
+        <tr class="table-row-hover" data-status="${order.status || ''}">
+          <td><strong>#${order.id || 'N/A'}</strong></td>
+          <td>${order.customerName || order.customer?.name || 'N/A'}</td>
+          <td>${orderDate}</td>
+          <td><strong>$${parseFloat(order.totalAmount || 0).toFixed(2)}</strong></td>
+          <td><span class="badge ${statusClass}">${order.status || 'N/A'}</span></td>
+          <td class="text-center">
+            <div class="btn-group" role="group">
+              <button class="btn btn-sm btn-outline-primary" onclick="viewOrderDetails(${order.id})" title="View">
+                <i class="bi bi-eye"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-success" onclick="updateOrderStatus(${order.id})" title="Update Status">
+                <i class="bi bi-arrow-repeat"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+    $("#orderTableBody").html(html);
+    $('#orderCount').text(`${orders.length} order${orders.length !== 1 ? 's' : ''}`);
+  }
+
+  function filterOrders() {
+    const searchTerm = $('#orderSearch').val().toLowerCase();
+    const statusFilter = $('#orderStatusFilter').val();
+    
+    $('#orderTableBody tr').each(function() {
+      const text = $(this).text().toLowerCase();
+      const status = $(this).data('status') || '';
+      const matchesSearch = text.includes(searchTerm);
+      const matchesStatus = !statusFilter || status === statusFilter;
+      $(this).toggle(matchesSearch && matchesStatus);
+    });
+  }
+
+  window.viewOrderDetails = function(id) {
+    $.ajax({
+      url: `${API_BASE_URL}/Orders/${id}`,
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+      success: function(order) {
+        showOrderDetailsModal(order);
+      },
+      error: function() {
+        showNotification('Error loading order details', 'error');
+      }
+    });
+  };
+
+  function showOrderDetailsModal(order) {
+    const itemsHtml = order.orderItems?.map(item => `
+      <tr>
+        <td>${item.productName || 'N/A'}</td>
+        <td>${item.quantity || 0}</td>
+        <td>$${parseFloat(item.price || 0).toFixed(2)}</td>
+        <td>$${parseFloat((item.quantity || 0) * (item.price || 0)).toFixed(2)}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="4" class="text-center">No items</td></tr>';
+    
+    const modal = $(`
+      <div class="modal fade" id="orderDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title"><i class="bi bi-cart-check me-2"></i>Order #${order.id} Details</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <p><strong>Customer:</strong> ${order.customerName || 'N/A'}</p>
+                  <p><strong>Date:</strong> ${order.orderDate ? new Date(order.orderDate).toLocaleString() : 'N/A'}</p>
+                </div>
+                <div class="col-md-6">
+                  <p><strong>Status:</strong> <span class="badge bg-primary">${order.status || 'N/A'}</span></p>
+                  <p><strong>Total:</strong> <strong>$${parseFloat(order.totalAmount || 0).toFixed(2)}</strong></p>
+                </div>
+              </div>
+              <hr>
+              <h6 class="mb-3">Order Items</h6>
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Quantity</th>
+                      <th>Price</th>
+                      <th>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>${itemsHtml}</tbody>
+                </table>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+    $('body').append(modal);
+    const bsModal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+    bsModal.show();
+    $('#orderDetailsModal').on('hidden.bs.modal', function() { $(this).remove(); });
+  }
+
+  window.updateOrderStatus = function(id) {
+    const modal = $(`
+      <div class="modal fade" id="updateStatusModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+              <h5 class="modal-title"><i class="bi bi-arrow-repeat me-2"></i>Update Order Status</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+              <form id="statusForm">
+                <input type="hidden" id="orderId" value="${id}">
+                <div class="mb-3">
+                  <label class="form-label">New Status</label>
+                  <select class="form-select" id="newStatus" required>
+                    <option value="Pending">Pending</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Shipped">Shipped</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-success" onclick="saveOrderStatus()">Update Status</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+    $('body').append(modal);
+    const bsModal = new bootstrap.Modal(document.getElementById('updateStatusModal'));
+    bsModal.show();
+    $('#updateStatusModal').on('hidden.bs.modal', function() { $(this).remove(); });
+  };
+
+  window.saveOrderStatus = function() {
+    const orderId = $('#orderId').val();
+    const newStatus = $('#newStatus').val();
+    
+    $.ajax({
+      url: `${API_BASE_URL}/Orders/${orderId}/status`,
+      method: 'PUT',
+      contentType: 'application/json',
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+      data: JSON.stringify({ status: newStatus }),
+      success: function() {
+        bootstrap.Modal.getInstance(document.getElementById('updateStatusModal')).hide();
+        fetchOrders();
+        showNotification('Order status updated successfully', 'success');
+      },
+      error: function() {
+        showNotification('Error updating order status', 'error');
+      }
+    });
+  };
 
   // ==================== CATEGORY SECTION ====================
   function loadCategory() {
@@ -1325,33 +1699,36 @@ $(document).ready(function () {
   };
 
   window.deleteCategory = function(id) {
-    if (confirm('Are you sure you want to delete this category?')) {
+    showConfirmModal('Delete Category', 'Are you sure you want to delete this category?', function() {
       $.ajax({
         url: `${API_BASE_URL}/Categories/${id}`,
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${getAuthToken()}` },
         success: function() {
           fetchCategories();
-          alert('Category deleted successfully');
+          showNotification('Category deleted successfully', 'success');
         },
-        error: function() {
-          alert('Error deleting category');
+        error: function(xhr) {
+          showNotification(xhr.responseJSON?.message || 'Error deleting category', 'error');
         }
       });
-    }
+    });
   };
 
   window.saveCategory = function() {
+    if (!$('#categoryName').val().trim()) {
+      showNotification('Please enter a category name', 'error');
+      return;
+    }
     const data = {
       id: $('#categoryId').val() || 0,
-      name: $('#categoryName').val(),
-      description: $('#categoryDescription').val(),
-      imageUrl: $('#categoryImageUrl').val(),
+      name: $('#categoryName').val().trim(),
+      description: $('#categoryDescription').val().trim(),
+      imageUrl: $('#categoryImageUrl').val().trim() || null,
       isActive: $('#categoryIsActive').is(':checked')
     };
     const method = data.id ? 'PUT' : 'POST';
     const url = data.id ? `${API_BASE_URL}/Categories/${data.id}` : `${API_BASE_URL}/Categories`;
-    
     $.ajax({
       url: url,
       method: method,
@@ -1361,10 +1738,10 @@ $(document).ready(function () {
       success: function() {
         bootstrap.Modal.getInstance(document.getElementById('categoryModal')).hide();
         fetchCategories();
-        alert('Category saved successfully');
+        showNotification(`Category ${data.id ? 'updated' : 'created'} successfully`, 'success');
       },
-      error: function() {
-        alert('Error saving category');
+      error: function(xhr) {
+        showNotification(xhr.responseJSON?.message || 'Error saving category', 'error');
       }
     });
   };
@@ -1540,33 +1917,40 @@ $(document).ready(function () {
   };
 
   window.deleteSubcategory = function(id) {
-    if (confirm('Are you sure you want to delete this subcategory?')) {
+    showConfirmModal('Delete Subcategory', 'Are you sure you want to delete this subcategory?', function() {
       $.ajax({
         url: `${API_BASE_URL}/Subcategories/${id}`,
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${getAuthToken()}` },
         success: function() {
           fetchSubcategories();
-          alert('Subcategory deleted successfully');
+          showNotification('Subcategory deleted successfully', 'success');
         },
-        error: function() {
-          alert('Error deleting subcategory');
+        error: function(xhr) {
+          showNotification(xhr.responseJSON?.message || 'Error deleting subcategory', 'error');
         }
       });
-    }
+    });
   };
 
   window.saveSubcategory = function() {
+    if (!$('#subcategoryCategoryId').val()) {
+      showNotification('Please select a category', 'error');
+      return;
+    }
+    if (!$('#subcategoryName').val().trim()) {
+      showNotification('Please enter a subcategory name', 'error');
+      return;
+    }
     const data = {
       id: $('#subcategoryId').val() || 0,
       categoryId: $('#subcategoryCategoryId').val(),
-      name: $('#subcategoryName').val(),
-      description: $('#subcategoryDescription').val(),
+      name: $('#subcategoryName').val().trim(),
+      description: $('#subcategoryDescription').val().trim(),
       isActive: $('#subcategoryIsActive').is(':checked')
     };
     const method = data.id ? 'PUT' : 'POST';
     const url = data.id ? `${API_BASE_URL}/Subcategories/${data.id}` : `${API_BASE_URL}/Subcategories`;
-    
     $.ajax({
       url: url,
       method: method,
@@ -1576,10 +1960,10 @@ $(document).ready(function () {
       success: function() {
         bootstrap.Modal.getInstance(document.getElementById('subcategoryModal')).hide();
         fetchSubcategories();
-        alert('Subcategory saved successfully');
+        showNotification(`Subcategory ${data.id ? 'updated' : 'created'} successfully`, 'success');
       },
-      error: function() {
-        alert('Error saving subcategory');
+      error: function(xhr) {
+        showNotification(xhr.responseJSON?.message || 'Error saving subcategory', 'error');
       }
     });
   };
