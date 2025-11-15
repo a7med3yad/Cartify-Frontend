@@ -39,27 +39,39 @@ faqItems.forEach(item => {
 supportForm.addEventListener('submit', async function (e) {
   e.preventDefault();
 
-  // Form data
-  const name = document.getElementById('name').value;
-  const email = document.getElementById('email').value;
-  const subject = document.getElementById('subject').value;
-  const category = parseInt(document.getElementById('category').value, 10);
-  const message = document.getElementById('message').value;
+  // Get form data
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const subject = document.getElementById('subject').value.trim();
+  const categoryValue = document.getElementById('category').value;
+  const message = document.getElementById('message').value.trim();
 
-  if (!name || !email || !subject || isNaN(category) || !message) {
+  // Validation
+  if (!name || !email || !subject || !categoryValue || !message) {
     showNotification('Please fill all required fields', 'error');
     return;
   }
 
-  const token = getAuthToken();
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    showNotification('Please enter a valid email address', 'error');
+    return;
+  }
 
-  const helpPageData = {
-    name,
-    email,
-    subject,
-    category,
-    message
+  // Convert category to integer (IssueCategory enum)
+  const issueCategory = parseInt(categoryValue, 10);
+
+  // Prepare DTO matching the controller's DtoSubmitTicket structure
+  const submitTicketDto = {
+    Name: name,
+    Email: email,
+    IssueCategory: issueCategory,
+    Subject: subject,
+    Message: message
   };
+
+  const token = getAuthToken();
 
   const headers = {
     'Content-Type': 'application/json'
@@ -70,9 +82,9 @@ supportForm.addEventListener('submit', async function (e) {
   }
 
   // Debug logging
-  console.log('Submitting help page request:', {
+  console.log('Submitting ticket:', {
     url: `${API_BASE_URL}/HelpPage`,
-    data: helpPageData,
+    data: submitTicketDto,
     hasToken: !!token
   });
 
@@ -80,51 +92,77 @@ supportForm.addEventListener('submit', async function (e) {
     const response = await fetch(`${API_BASE_URL}/HelpPage`, {
       method: 'POST',
       headers: headers,
-      body: JSON.stringify(helpPageData)
+      body: JSON.stringify(submitTicketDto)
     });
 
-    // Check if response is ok before trying to parse JSON
+    // Check if response is ok
     if (!response.ok) {
       let errorMessage = `Server error: ${response.status} ${response.statusText}`;
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.title || errorMessage;
+        console.error('Server error details:', errorData);
       } catch (parseError) {
-        // If we can't parse the error response, use the status text
-        console.error('Could not parse error response:', parseError);
+        console.error('Could not parse error response. Status:', response.status, response.statusText);
       }
       throw new Error(errorMessage);
     }
 
-    const resJson = await response.json();
+    // Parse response (controller returns Ok() which may be empty or contain data)
+    let responseData = null;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        responseData = await response.json();
+      } catch (e) {
+        // Response might be empty, which is fine
+        console.log('Response is empty or not JSON');
+      }
+    }
 
-    showNotification(`Thank you, ${name}! Your support request has been submitted. We'll get back to you within 24 hours.`, 'success');
+    console.log('Ticket submission successful:', responseData);
+
+    showNotification(`Thank you, ${name}! Your support ticket has been submitted successfully. We'll get back to you within 24 hours.`, 'success');
     supportForm.reset();
 
   } catch (error) {
-    console.error("Help page submission error:", error);
+    console.error("Ticket submission error:", error);
+    console.error("Error details:", {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     
-    // Handle CORS and network errors specifically
+    // Handle different error types
     if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-      showNotification('Network error: Unable to connect to server. Please check your connection and try again.', 'error');
+      showNotification('Network error: Please check your internet connection and try again.', 'error');
     } else if (error.message.includes('CORS')) {
       showNotification('CORS error: Server configuration issue. Please contact support.', 'error');
+    } else if (error.message.includes('500')) {
+      showNotification('Server Error (500): The backend is experiencing an internal error. Please try again later.', 'error');
     } else {
-      showNotification(error.message || 'Failed to submit support request. Please try again.', 'error');
+      showNotification(error.message || 'Failed to submit support ticket. Please try again later.', 'error');
     }
   }
 });
 
-// Buttons
-openTicketBtn.addEventListener('click', () => {
-  document.getElementById('subject').focus();
-  showNotification('Please fill out the form below to open a support ticket.', 'success');
-});
+// Button event handlers
+if (openTicketBtn) {
+  openTicketBtn.addEventListener('click', () => {
+    document.getElementById('subject').focus();
+    showNotification('Please fill out the form below to open a support ticket.', 'success');
+  });
+}
 
-chatSupportBtn.addEventListener('click', () => {
-  showNotification('Our chat support is currently offline. Please submit a support ticket or call us.', 'error');
-});
+if (chatSupportBtn) {
+  chatSupportBtn.addEventListener('click', () => {
+    showNotification('Our chat support is currently offline. Please submit a support ticket or call us.', 'error');
+  });
+}
 
-callSupportBtn.addEventListener('click', () => {
-  showNotification('Call us at 1-800-123-4567. Our support hours are Mon-Fri 9AM-6PM EST.', 'success');
-});
+if (callSupportBtn) {
+  callSupportBtn.addEventListener('click', () => {
+    showNotification('Call us at 1-800-123-4567. Our support hours are Mon-Fri 9AM-6PM EST.', 'success');
+  });
+}
+
