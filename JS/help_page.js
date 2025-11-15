@@ -9,185 +9,111 @@ function getAuthToken() {
 
 // Show notification
 function showNotification(message, type) {
-  const notification = document.getElementById('notification');
-  if (!notification) {
-    console.error('Notification element not found');
-    return;
+  const notification = $('#notification');
+  if (notification.length) {
+    notification.text(message).removeClass().addClass(`notification ${type} show`);
+    setTimeout(() => {
+      notification.removeClass('show');
+    }, 4000);
   }
-  notification.textContent = message;
-  notification.className = `notification ${type} show`;
-  setTimeout(() => {
-    notification.className = `notification ${type}`;
-  }, 4000);
 }
 
-// Wait for DOM to be ready
-document.addEventListener('DOMContentLoaded', function() {
-  // DOM elements
-  const notification = document.getElementById('notification');
-  const faqItems = document.querySelectorAll('.faq-item');
-  const supportForm = document.getElementById('supportForm');
-  const openTicketBtn = document.getElementById('openTicketBtn');
-  const chatSupportBtn = document.getElementById('chatSupportBtn');
-  const callSupportBtn = document.getElementById('callSupportBtn');
-
+$(document).ready(function() {
   // FAQ accordion
-  if (faqItems && faqItems.length > 0) {
-    faqItems.forEach(item => {
-      const question = item.querySelector('.faq-question');
-      if (question) {
-        question.addEventListener('click', () => {
-          faqItems.forEach(other => {
-            if (other !== item) other.classList.remove('active');
-          });
-          item.classList.toggle('active');
-        });
-      }
-    });
-  }
-
-  // Support form submission
-  if (!supportForm) {
-    console.error('Support form not found');
-    return;
-  }
-
-  supportForm.addEventListener('submit', async function (e) {
-  e.preventDefault();
-
-  // Get form data
-  const name = document.getElementById('name').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const subject = document.getElementById('subject').value.trim();
-  const categoryValue = document.getElementById('category').value;
-  const message = document.getElementById('message').value.trim();
-
-  // Validation
-  if (!name || !email || !subject || !categoryValue || !message) {
-    showNotification('Please fill all required fields', 'error');
-    return;
-  }
-
-  // Validate email format
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    showNotification('Please enter a valid email address', 'error');
-    return;
-  }
-
-  // Convert category to integer (IssueCategory enum)
-  const issueCategory = parseInt(categoryValue, 10);
-
-  // Prepare DTO matching the controller's DtoSubmitTicket structure
-  const submitTicketDto = {
-    Name: name,
-    Email: email,
-    IssueCategory: issueCategory,
-    Subject: subject,
-    Message: message
-  };
-
-  const token = getAuthToken();
-
-  const headers = {
-    'Content-Type': 'application/json'
-  };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  // Debug logging
-  console.log('Submitting ticket:', {
-    url: `${API_BASE_URL}/HelpPage`,
-    data: submitTicketDto,
-    hasToken: !!token
+  $('.faq-item .faq-question').click(function() {
+    $('.faq-item').not($(this).closest('.faq-item')).removeClass('active');
+    $(this).closest('.faq-item').toggleClass('active');
   });
 
-  try {
-    const response = await fetch(`${API_BASE_URL}/HelpPage`, {
-      method: 'POST',
+  // Support form submission
+  $('#supportForm').submit(function(e) {
+    e.preventDefault();
+
+    // Get form data
+    const name = $('#name').val().trim();
+    const email = $('#email').val().trim();
+    const subject = $('#subject').val().trim();
+    const categoryValue = $('#category').val();
+    const message = $('#message').val().trim();
+
+    // Validation
+    if (!name || !email || !subject || !categoryValue || !message) {
+      showNotification('Please fill all required fields', 'error');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showNotification('Please enter a valid email address', 'error');
+      return;
+    }
+
+    // Prepare DTO matching the controller's DtoSubmitTicket structure
+    const submitTicketDto = {
+      Name: name,
+      Email: email,
+      IssueCategory: parseInt(categoryValue, 10),
+      Subject: subject,
+      Message: message
+    };
+
+    const token = getAuthToken();
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // AJAX call
+    $.ajax({
+      url: `${API_BASE_URL}/HelpPage`,
+      type: 'POST',
       headers: headers,
-      body: JSON.stringify(submitTicketDto)
-    });
+      data: JSON.stringify(submitTicketDto),
+      success: function(response) {
+        console.log('Ticket submission successful:', response);
+        showNotification(`Thank you, ${name}! Your support ticket has been submitted successfully. We'll get back to you within 24 hours.`, 'success');
+        $('#supportForm')[0].reset();
+      },
+      error: function(xhr, status, error) {
+        console.error('Ticket submission error:', {
+          status: xhr.status,
+          statusText: xhr.statusText,
+          error: error,
+          responseText: xhr.responseText
+        });
 
-    // Check if response is ok
-    if (!response.ok) {
-      let errorMessage = `Server error: ${response.status} ${response.statusText}`;
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.title || errorMessage;
-        console.error('Server error details:', errorData);
-      } catch (parseError) {
-        console.error('Could not parse error response. Status:', response.status, response.statusText);
+        let errorMessage = 'Failed to submit support ticket. Please try again later.';
+        
+        if (xhr.status === 0) {
+          errorMessage = 'Network error: Unable to connect to server. Please check your connection and try again.';
+        } else if (xhr.status >= 500) {
+          errorMessage = 'Server Error: The backend is experiencing an internal error. Please try again later.';
+        } else if (xhr.responseJSON && xhr.responseJSON.message) {
+          errorMessage = xhr.responseJSON.message;
+        } else if (xhr.statusText) {
+          errorMessage = xhr.statusText;
+        }
+
+        showNotification(errorMessage, 'error');
       }
-      throw new Error(errorMessage);
-    }
-
-    // Parse response (controller returns Ok() which may be empty or contain data)
-    let responseData = null;
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      try {
-        responseData = await response.json();
-      } catch (e) {
-        // Response might be empty, which is fine
-        console.log('Response is empty or not JSON');
-      }
-    }
-
-    console.log('Ticket submission successful:', responseData);
-
-    showNotification(`Thank you, ${name}! Your support ticket has been submitted successfully. We'll get back to you within 24 hours.`, 'success');
-    supportForm.reset();
-
-  } catch (error) {
-    console.error("Ticket submission error:", error);
-    console.error("Error details:", {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
     });
-    
-    // Handle different error types
-    if (error.name === 'TypeError' && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
-      console.error('Network error detected. Possible causes:');
-      console.error('1. Server is down or unreachable');
-      console.error('2. CORS policy blocking the request');
-      console.error('3. Network connectivity issue');
-      console.error('4. Invalid URL or endpoint');
-      showNotification('Network error: Unable to connect to server. Please check your connection and try again.', 'error');
-    } else if (error.message.includes('CORS') || error.message.includes('cors')) {
-      showNotification('CORS error: Server configuration issue. Please contact support.', 'error');
-    } else if (error.message.includes('500')) {
-      showNotification('Server Error (500): The backend is experiencing an internal error. Please try again later.', 'error');
-    } else {
-      showNotification(error.message || 'Failed to submit support ticket. Please try again later.', 'error');
-    }
-  }
   });
 
   // Button event handlers
-  if (openTicketBtn) {
-    openTicketBtn.addEventListener('click', () => {
-      const subjectField = document.getElementById('subject');
-      if (subjectField) {
-        subjectField.focus();
-      }
-      showNotification('Please fill out the form below to open a support ticket.', 'success');
-    });
-  }
+  $('#openTicketBtn').click(function() {
+    $('#subject').focus();
+    showNotification('Please fill out the form below to open a support ticket.', 'success');
+  });
 
-  if (chatSupportBtn) {
-    chatSupportBtn.addEventListener('click', () => {
-      showNotification('Our chat support is currently offline. Please submit a support ticket or call us.', 'error');
-    });
-  }
+  $('#chatSupportBtn').click(function() {
+    showNotification('Our chat support is currently offline. Please submit a support ticket or call us.', 'error');
+  });
 
-  if (callSupportBtn) {
-    callSupportBtn.addEventListener('click', () => {
-      showNotification('Call us at 1-800-123-4567. Our support hours are Mon-Fri 9AM-6PM EST.', 'success');
-    });
-  }
+  $('#callSupportBtn').click(function() {
+    showNotification('Call us at 1-800-123-4567. Our support hours are Mon-Fri 9AM-6PM EST.', 'success');
+  });
 });
-
