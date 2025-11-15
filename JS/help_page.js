@@ -7,16 +7,13 @@ function getAuthToken() {
   return authData.jwt || null;
 }
 
-// DOM elements
-const notification = document.getElementById('notification');
-const faqItems = document.querySelectorAll('.faq-item');
-const supportForm = document.getElementById('supportForm');
-const openTicketBtn = document.getElementById('openTicketBtn');
-const chatSupportBtn = document.getElementById('chatSupportBtn');
-const callSupportBtn = document.getElementById('callSupportBtn');
-
 // Show notification
 function showNotification(message, type) {
+  const notification = document.getElementById('notification');
+  if (!notification) {
+    console.error('Notification element not found');
+    return;
+  }
   notification.textContent = message;
   notification.className = `notification ${type} show`;
   setTimeout(() => {
@@ -24,19 +21,38 @@ function showNotification(message, type) {
   }, 4000);
 }
 
-// FAQ accordion
-faqItems.forEach(item => {
-  const question = item.querySelector('.faq-question');
-  question.addEventListener('click', () => {
-    faqItems.forEach(other => {
-      if (other !== item) other.classList.remove('active');
-    });
-    item.classList.toggle('active');
-  });
-});
+// Wait for DOM to be ready
+document.addEventListener('DOMContentLoaded', function() {
+  // DOM elements
+  const notification = document.getElementById('notification');
+  const faqItems = document.querySelectorAll('.faq-item');
+  const supportForm = document.getElementById('supportForm');
+  const openTicketBtn = document.getElementById('openTicketBtn');
+  const chatSupportBtn = document.getElementById('chatSupportBtn');
+  const callSupportBtn = document.getElementById('callSupportBtn');
 
-// Support form submission
-supportForm.addEventListener('submit', async function (e) {
+  // FAQ accordion
+  if (faqItems && faqItems.length > 0) {
+    faqItems.forEach(item => {
+      const question = item.querySelector('.faq-question');
+      if (question) {
+        question.addEventListener('click', () => {
+          faqItems.forEach(other => {
+            if (other !== item) other.classList.remove('active');
+          });
+          item.classList.toggle('active');
+        });
+      }
+    });
+  }
+
+  // Support form submission
+  if (!supportForm) {
+    console.error('Support form not found');
+    return;
+  }
+
+  supportForm.addEventListener('submit', async function (e) {
   e.preventDefault();
 
   // Get form data
@@ -134,9 +150,14 @@ supportForm.addEventListener('submit', async function (e) {
     });
     
     // Handle different error types
-    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-      showNotification('Network error: Please check your internet connection and try again.', 'error');
-    } else if (error.message.includes('CORS')) {
+    if (error.name === 'TypeError' && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
+      console.error('Network error detected. Possible causes:');
+      console.error('1. Server is down or unreachable');
+      console.error('2. CORS policy blocking the request');
+      console.error('3. Network connectivity issue');
+      console.error('4. Invalid URL or endpoint');
+      showNotification('Network error: Unable to connect to server. Please check your connection and try again.', 'error');
+    } else if (error.message.includes('CORS') || error.message.includes('cors')) {
       showNotification('CORS error: Server configuration issue. Please contact support.', 'error');
     } else if (error.message.includes('500')) {
       showNotification('Server Error (500): The backend is experiencing an internal error. Please try again later.', 'error');
@@ -144,25 +165,29 @@ supportForm.addEventListener('submit', async function (e) {
       showNotification(error.message || 'Failed to submit support ticket. Please try again later.', 'error');
     }
   }
+  });
+
+  // Button event handlers
+  if (openTicketBtn) {
+    openTicketBtn.addEventListener('click', () => {
+      const subjectField = document.getElementById('subject');
+      if (subjectField) {
+        subjectField.focus();
+      }
+      showNotification('Please fill out the form below to open a support ticket.', 'success');
+    });
+  }
+
+  if (chatSupportBtn) {
+    chatSupportBtn.addEventListener('click', () => {
+      showNotification('Our chat support is currently offline. Please submit a support ticket or call us.', 'error');
+    });
+  }
+
+  if (callSupportBtn) {
+    callSupportBtn.addEventListener('click', () => {
+      showNotification('Call us at 1-800-123-4567. Our support hours are Mon-Fri 9AM-6PM EST.', 'success');
+    });
+  }
 });
-
-// Button event handlers
-if (openTicketBtn) {
-  openTicketBtn.addEventListener('click', () => {
-    document.getElementById('subject').focus();
-    showNotification('Please fill out the form below to open a support ticket.', 'success');
-  });
-}
-
-if (chatSupportBtn) {
-  chatSupportBtn.addEventListener('click', () => {
-    showNotification('Our chat support is currently offline. Please submit a support ticket or call us.', 'error');
-  });
-}
-
-if (callSupportBtn) {
-  callSupportBtn.addEventListener('click', () => {
-    showNotification('Call us at 1-800-123-4567. Our support hours are Mon-Fri 9AM-6PM EST.', 'success');
-  });
-}
 
