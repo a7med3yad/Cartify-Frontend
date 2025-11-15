@@ -20,6 +20,7 @@ $(document).ready(function() {
       Message: $('#message').val().trim()
     };
 
+    // Validate form
     if (!data.Name || !data.Email || !data.Subject || isNaN(data.IssueCategory) || !data.Message) {
       showNotification('Please fill all fields.', 'error');
       return;
@@ -30,13 +31,11 @@ $(document).ready(function() {
       return;
     }
 
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
+    // AJAX request without Authorization
     $.ajax({
-      url: `${API_BASE_URL}/HelpPage/SubmitTicket`, // <--- هنا استخدمنا الانبوينت الجديد
+      url: `${API_BASE_URL}/HelpPage/SubmitTicket`,
       type: 'POST',
-      headers: headers,
+      contentType: 'application/json',
       data: JSON.stringify(data),
       success: function(response) {
         showNotification('Ticket submitted successfully!', 'success');
