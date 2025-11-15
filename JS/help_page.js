@@ -31,7 +31,6 @@ $(document).ready(function() {
     }
 
     const headers = { 'Content-Type': 'application/json' };
-    const token = getAuthToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     $.ajax({
