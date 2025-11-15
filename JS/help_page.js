@@ -1,5 +1,5 @@
 // API Base URL
-const API_BASE_URL = 'https://cartify.runasp.net/api';
+const API_BASE_URL = 'https://cartify73.runasp.net/api';
 
 // Helper function to get auth token
 function getAuthToken() {
