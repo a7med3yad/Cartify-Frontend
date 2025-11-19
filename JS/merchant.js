@@ -1298,81 +1298,110 @@ const MerchantApp = (() => {
     }
 
     // Fetch Customers Count
-    $.ajax({
-      url: `${API_BASE_URL}/merchant/customers/store/${storeId}/count`,
-      method: 'GET',
-      headers: { 
-        'Authorization': `Bearer ${getAuthToken()}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      success: function(response) {
-        $("#totalCustomers").text(response.totalCustomers || 0);
-      },
-      error: function(xhr) {
-        console.error('Error fetching customers count:', xhr);
-        $("#totalCustomers").text("0");
-        if (xhr.status === 0 || xhr.statusText === 'error') {
-          console.warn('⚠️ CORS error: Backend needs to allow origin http://127.0.0.1:5500');
+    (async () => {
+      try {
+        const token = getAuthToken();
+        if (!token) return;
+        
+        const response = await fetch(`${API_BASE_URL}/merchant/customers/store/${storeId}/count`, {
+          method: 'GET',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
+        const data = await response.json();
+        $("#totalCustomers").text(data.totalCustomers || 0);
+      } catch (error) {
+        console.error('Error fetching customers count:', error);
+        $("#totalCustomers").text("0");
       }
-    });
+    })();
 
     // Fetch Orders Count
-    $.ajax({
-      url: `${API_BASE_URL}/merchant/orders/store/${storeId}?page=1&pageSize=1`,
-      method: 'GET',
-      headers: { 
-        'Authorization': `Bearer ${getAuthToken()}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      success: function(response) {
-        const totalOrders = response.totalCount || response.total || 0;
-        $("#totalOrders").text(totalOrders);
-      },
-      error: function(xhr) {
-        console.error('Error fetching orders count:', xhr);
-        $("#totalOrders").text("0");
-        if (xhr.status === 0 || xhr.statusText === 'error') {
-          console.warn('⚠️ CORS error: Backend needs to allow origin http://127.0.0.1:5500');
+    (async () => {
+      try {
+        const token = getAuthToken();
+        if (!token) return;
+        
+        const response = await fetch(`${API_BASE_URL}/merchant/orders/store/${storeId}?page=1&pageSize=1`, {
+          method: 'GET',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
+        const data = await response.json();
+        const totalOrders = data.totalCount || data.total || (data.items || data.Items || []).length || 0;
+        $("#totalOrders").text(totalOrders);
+      } catch (error) {
+        console.error('Error fetching orders count:', error);
+        $("#totalOrders").text("0");
       }
-    });
+    })();
 
     // Fetch Revenue from Transactions Summary
-    $.ajax({
-      url: `${API_BASE_URL}/merchant/transactions/store/${storeId}/summary?period=monthly`,
-      method: 'GET',
-      headers: { 
-        'Authorization': `Bearer ${getAuthToken()}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      success: function(response) {
-        const revenue = response.totalAmount || response.totalRevenue || 0;
-        $("#totalRevenue").text("$" + parseFloat(revenue).toFixed(2));
-      },
-      error: function(xhr) {
-        console.error('Error fetching revenue:', xhr);
-        $("#totalRevenue").text("$0");
-        if (xhr.status === 0 || xhr.statusText === 'error') {
-          console.warn('⚠️ CORS error: Backend needs to allow origin http://127.0.0.1:5500');
+    (async () => {
+      try {
+        const token = getAuthToken();
+        if (!token) return;
+        
+        const response = await fetch(`${API_BASE_URL}/merchant/transactions/store/${storeId}/summary?period=monthly`, {
+          method: 'GET',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
+        const data = await response.json();
+        const revenue = data.totalAmount || data.totalRevenue || 0;
+        $("#totalRevenue").text("$" + parseFloat(revenue).toFixed(2));
+      } catch (error) {
+        console.error('Error fetching revenue:', error);
+        $("#totalRevenue").text("$0");
       }
-    });
+    })();
 
     // Fetch Recent Orders
-    $.ajax({
-      url: `${API_BASE_URL}/merchant/orders/store/${storeId}?page=1&pageSize=5`,
-      method: 'GET',
-      headers: { 
-        'Authorization': `Bearer ${getAuthToken()}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      success: function(response) {
-        const orders = response.data || response.items || response || [];
+    (async () => {
+      try {
+        const token = getAuthToken();
+        if (!token) return;
+        
+        const response = await fetch(`${API_BASE_URL}/merchant/orders/store/${storeId}?page=1&pageSize=5`, {
+          method: 'GET',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const orders = data.items || data.Items || data.data || data || [];
+        
         if (orders.length === 0) {
           $("#recentActivity").html("<p>No recent activity</p>");
         } else {
@@ -1393,15 +1422,11 @@ const MerchantApp = (() => {
           html += '</ul>';
           $("#recentActivity").html(html);
         }
-      },
-      error: function(xhr) {
-        console.error('Error fetching recent orders:', xhr);
+      } catch (error) {
+        console.error('Error fetching recent orders:', error);
         $("#recentActivity").html("<p>Error loading recent activity</p>");
-        if (xhr.status === 0 || xhr.statusText === 'error') {
-          console.warn('⚠️ CORS error: Backend needs to allow origin http://127.0.0.1:5500');
-        }
       }
-    });
+    })();
   }
 
   // ==================== CUSTOMER SECTION ====================
@@ -3081,45 +3106,47 @@ const MerchantApp = (() => {
     console.log('Subcategory ID:', subcategoryId);
     console.log('Category ID:', categoryId);
     
-    $.ajax({
-      url: url,
-      method: method,
-      headers: { 
-        'Authorization': `Bearer ${token}`
-      },
-      processData: false,
-      contentType: false,
-      data: formData,
-      success: function(response) {
-        console.log('Subcategory saved successfully:', response);
+    (async () => {
+      try {
+        const response = await fetch(url, {
+          method: method,
+          headers: { 
+            'Authorization': `Bearer ${token}`
+            // Don't set Content-Type for FormData - browser will set it with boundary
+          },
+          body: formData
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: `HTTP error! status: ${response.status}` }));
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Subcategory saved successfully:', result);
         bootstrap.Modal.getInstance(document.getElementById('subcategoryModal')).hide();
         fetchSubcategories();
         showNotification(`Subcategory ${subcategoryId ? 'updated' : 'created'} successfully`, 'success');
-      },
-      error: function(xhr) {
-        console.error('Error saving subcategory:', xhr);
-        console.error('Status:', xhr.status);
-        console.error('Response:', xhr.responseJSON || xhr.responseText);
+      } catch (error) {
+        console.error('Error saving subcategory:', error);
         
         let errorMsg = 'Error saving subcategory';
-        if (xhr.status === 0 || xhr.statusText === 'error') {
+        if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
           errorMsg = `CORS error: Unable to connect to API. The backend needs to allow requests from ${window.location.origin}. Please check Program.cs CORS configuration.`;
-        } else if (xhr.status === 401) {
+        } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
           errorMsg = 'Unauthorized. Please check your authentication token.';
-        } else if (xhr.status === 400) {
+        } else if (error.message.includes('400')) {
           errorMsg = 'Invalid data. Please check all required fields.';
-        } else if (xhr.status === 404) {
+        } else if (error.message.includes('404')) {
           errorMsg = 'Subcategory not found. The subcategory may have been deleted.';
-        } else if (xhr.status === 403) {
+        } else if (error.message.includes('403')) {
           errorMsg = 'Forbidden. You may not have permission to perform this action.';
-        } else if (xhr.responseJSON && xhr.responseJSON.message) {
-          errorMsg = xhr.responseJSON.message;
-        } else if (xhr.responseText) {
-          errorMsg = xhr.responseText;
+        } else {
+          errorMsg = error.message || 'Error saving subcategory';
         }
         showNotification(errorMsg, 'error');
       }
-    });
+    })();
   };
 
   function loadSubcategoryData(id) {
