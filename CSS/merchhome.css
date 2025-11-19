@@ -11,6 +11,7 @@
 html,
 body {
   margin: 0;
+  padding: 0;
   background: var(--bgGradient);
   font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: var(--textPrimary);
@@ -29,6 +30,8 @@ body {
   display: flex;
   padding: 0px;
   margin-top: 0;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 /* ================================= */
@@ -45,7 +48,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2rem;
+  padding: 0 1.5rem;
   z-index: 1000;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -234,6 +237,7 @@ body {
   top: 80px;
   height: calc(100vh - 80px);
   overflow-y: auto;
+  margin-left: 0;
 }
 
 #sidebarNav {
@@ -365,6 +369,7 @@ body {
 
 .content-wrapper {
   padding: 2rem;
+  padding-left: 1.5rem;
   min-height: calc(100vh - 80px);
   background: var(--bg);
 }
