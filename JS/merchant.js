@@ -1292,7 +1292,7 @@ const MerchantApp = (() => {
           console.error('Error fetching products count:', xhr);
           $("#totalProducts").text("0");
           if (xhr.status === 0 || xhr.statusText === 'error') {
-            console.warn('⚠️ CORS error: Backend needs to allow origin http://127.0.0.1:5500');
+            console.warn(`⚠️ CORS error: Backend needs to allow origin ${window.location.origin}`);
           }
         }
       });
@@ -1512,11 +1512,13 @@ const MerchantApp = (() => {
         
         let errorMsg = 'Error loading promotions';
         if (xhr.status === 0 || xhr.statusText === 'error') {
-          errorMsg = '⚠️ CORS Error: The backend API needs to allow requests from http://127.0.0.1:5500. Please ensure Program.cs has been updated with .AllowCredentials() and the API has been redeployed.';
+          errorMsg = `⚠️ CORS Error: The backend API needs to allow requests from ${window.location.origin}. Please ensure Program.cs has been updated with .AllowCredentials() and includes "${window.location.origin}" in the allowed origins, then redeploy the API.`;
           console.error('CORS Error Details:', {
             url: url,
             origin: window.location.origin,
-            message: 'Backend must include Access-Control-Allow-Origin header'
+            message: 'Backend must include Access-Control-Allow-Origin header',
+            currentOrigin: window.location.origin,
+            requiredFix: `Add "${window.location.origin}" to CORS policy in Program.cs`
           });
         } else if (xhr.status === 401) {
           errorMsg = 'Unauthorized. Please check your authentication token. You may need to login again.';
@@ -1803,7 +1805,7 @@ const MerchantApp = (() => {
         
         let errorMsg = 'Error saving promotion';
         if (xhr.status === 0 || xhr.statusText === 'error') {
-          errorMsg = 'CORS error: Unable to connect to API. Please check if the API server allows requests from this origin.';
+          errorMsg = `CORS error: Unable to connect to API. The backend needs to allow requests from ${window.location.origin}. Please check Program.cs CORS configuration.`;
         } else if (xhr.status === 401) {
           errorMsg = 'Unauthorized. Please check your authentication token.';
         } else if (xhr.status === 400) {
@@ -1894,7 +1896,7 @@ const MerchantApp = (() => {
         
         let errorMsg = 'Error loading promotion data';
         if (xhr.status === 0 || xhr.statusText === 'error') {
-          errorMsg = 'CORS error: Unable to connect to API. Please check if the API server allows requests from this origin.';
+          errorMsg = `CORS error: Unable to connect to API. The backend needs to allow requests from ${window.location.origin}. Please check Program.cs CORS configuration.`;
         } else if (xhr.status === 404) {
           errorMsg = 'Promotion not found';
         } else if (xhr.status === 401) {
@@ -2520,7 +2522,7 @@ const MerchantApp = (() => {
         
         let errorMsg = 'Error loading categories';
         if (xhr.status === 0 || xhr.statusText === 'error') {
-          errorMsg = 'CORS error: Unable to connect to API. Please check if the API server allows requests from this origin.';
+          errorMsg = `CORS error: Unable to connect to API. The backend needs to allow requests from ${window.location.origin}. Please check Program.cs CORS configuration.`;
         } else if (xhr.status === 401) {
           errorMsg = 'Unauthorized. Please check your authentication token.';
         } else if (xhr.status === 404) {
@@ -2953,7 +2955,7 @@ const MerchantApp = (() => {
         
         let errorMsg = 'Error saving category';
         if (xhr.status === 0 || xhr.statusText === 'error') {
-          errorMsg = 'CORS error: Unable to connect to API. Please check if the API server allows requests from this origin.';
+          errorMsg = `CORS error: Unable to connect to API. The backend needs to allow requests from ${window.location.origin}. Please check Program.cs CORS configuration.`;
         } else if (xhr.status === 401) {
           errorMsg = 'Unauthorized. Please check your authentication token.';
         } else if (xhr.status === 400) {
@@ -3033,7 +3035,7 @@ const MerchantApp = (() => {
         
         let errorMsg = 'Error loading category data';
         if (xhr.status === 0 || xhr.statusText === 'error') {
-          errorMsg = 'CORS error: Unable to connect to API. Please check if the API server allows requests from this origin.';
+          errorMsg = `CORS error: Unable to connect to API. The backend needs to allow requests from ${window.location.origin}. Please check Program.cs CORS configuration.`;
         } else if (xhr.status === 404) {
           errorMsg = 'Category not found';
         } else if (xhr.status === 401) {
@@ -3147,7 +3149,7 @@ const MerchantApp = (() => {
         
         let errorMsg = 'Error loading subcategories';
         if (xhr.status === 0 || xhr.statusText === 'error') {
-          errorMsg = 'CORS error: Unable to connect to API. Please check if the API server allows requests from this origin.';
+          errorMsg = `CORS error: Unable to connect to API. The backend needs to allow requests from ${window.location.origin}. Please check Program.cs CORS configuration.`;
         } else if (xhr.status === 401) {
           errorMsg = 'Unauthorized. Please check your authentication token.';
         } else if (xhr.status === 404) {
@@ -3610,7 +3612,7 @@ const MerchantApp = (() => {
         
         let errorMsg = 'Error saving subcategory';
         if (xhr.status === 0 || xhr.statusText === 'error') {
-          errorMsg = 'CORS error: Unable to connect to API. Please check if the API server allows requests from this origin.';
+          errorMsg = `CORS error: Unable to connect to API. The backend needs to allow requests from ${window.location.origin}. Please check Program.cs CORS configuration.`;
         } else if (xhr.status === 401) {
           errorMsg = 'Unauthorized. Please check your authentication token.';
         } else if (xhr.status === 400) {
@@ -3696,7 +3698,7 @@ const MerchantApp = (() => {
         
         let errorMsg = 'Error loading subcategory data';
         if (xhr.status === 0 || xhr.statusText === 'error') {
-          errorMsg = 'CORS error: Unable to connect to API. Please check if the API server allows requests from this origin.';
+          errorMsg = `CORS error: Unable to connect to API. The backend needs to allow requests from ${window.location.origin}. Please check Program.cs CORS configuration.`;
         } else if (xhr.status === 404) {
           errorMsg = 'Subcategory not found';
         } else if (xhr.status === 401) {
