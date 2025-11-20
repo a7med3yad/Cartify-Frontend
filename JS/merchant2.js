@@ -4,6 +4,7 @@ const MerchantApp = (() => {
 
   const sectionLoaders = Object.freeze({
     Dashboard: loadDashboard,
+    Promotion: loadPromotion,
     Customer: loadCustomer,
     Order: loadOrder,
     Category: loadCategory,
@@ -12,7 +13,7 @@ const MerchantApp = (() => {
     Products: loadProductsList,
     Orders: loadOrders,
     Inventory: loadInventory,
-    Swapper: loadSwapper
+    Transactions: loadTransactions
   });
 
   const ATTRIBUTE_DEFINITIONS = {
@@ -1277,130 +1278,65 @@ const MerchantApp = (() => {
       $.ajax({
         url: `${API_BASE_URL}/merchant/products/merchant/${userId}?page=1&pageSize=1`,
         method: 'GET',
-        headers: { 
-          'Authorization': `Bearer ${getAuthToken()}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` },
         success: function(response) {
           const totalProducts = response.totalCount || response.total || 0;
           $("#totalProducts").text(totalProducts);
         },
-        error: function(xhr) {
-          console.error('Error fetching products count:', xhr);
+        error: function() {
           $("#totalProducts").text("0");
-          if (xhr.status === 0 || xhr.statusText === 'error') {
-            console.warn(`⚠️ CORS error: Backend needs to allow origin ${window.location.origin}`);
-          }
         }
       });
     }
 
     // Fetch Customers Count
-    (async () => {
-      try {
-        const token = getAuthToken();
-        if (!token) return;
-        
-        const response = await fetch(`${API_BASE_URL}/merchant/customers/store/${storeId}/count`, {
-          method: 'GET',
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        $("#totalCustomers").text(data.totalCustomers || 0);
-      } catch (error) {
-        console.error('Error fetching customers count:', error);
+    $.ajax({
+      url: `${API_BASE_URL}/merchant/customers/store/${storeId}/count`,
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+      success: function(response) {
+        $("#totalCustomers").text(response.totalCustomers || 0);
+      },
+      error: function() {
         $("#totalCustomers").text("0");
       }
-    })();
+    });
 
     // Fetch Orders Count
-    (async () => {
-      try {
-        const token = getAuthToken();
-        if (!token) return;
-        
-        const response = await fetch(`${API_BASE_URL}/merchant/orders/store/${storeId}?page=1&pageSize=1`, {
-          method: 'GET',
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        const totalOrders = data.totalCount || data.total || (data.items || data.Items || []).length || 0;
+    $.ajax({
+      url: `${API_BASE_URL}/merchant/orders/store/${storeId}?page=1&pageSize=1`,
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+      success: function(response) {
+        const totalOrders = response.totalCount || response.total || 0;
         $("#totalOrders").text(totalOrders);
-      } catch (error) {
-        console.error('Error fetching orders count:', error);
+      },
+      error: function() {
         $("#totalOrders").text("0");
       }
-    })();
+    });
 
     // Fetch Revenue from Transactions Summary
-    (async () => {
-      try {
-        const token = getAuthToken();
-        if (!token) return;
-        
-        const response = await fetch(`${API_BASE_URL}/merchant/transactions/store/${storeId}/summary?period=monthly`, {
-          method: 'GET',
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        const revenue = data.totalAmount || data.totalRevenue || 0;
+    $.ajax({
+      url: `${API_BASE_URL}/merchant/transactions/store/${storeId}/summary?period=monthly`,
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+      success: function(response) {
+        const revenue = response.totalAmount || response.totalRevenue || 0;
         $("#totalRevenue").text("$" + parseFloat(revenue).toFixed(2));
-      } catch (error) {
-        console.error('Error fetching revenue:', error);
+      },
+      error: function() {
         $("#totalRevenue").text("$0");
       }
-    })();
+    });
 
     // Fetch Recent Orders
-    (async () => {
-      try {
-        const token = getAuthToken();
-        if (!token) return;
-        
-        const response = await fetch(`${API_BASE_URL}/merchant/orders/store/${storeId}?page=1&pageSize=5`, {
-          method: 'GET',
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        const orders = data.items || data.Items || data.data || data || [];
-        
+    $.ajax({
+      url: `${API_BASE_URL}/merchant/orders/store/${storeId}?page=1&pageSize=5`,
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+      success: function(response) {
+        const orders = response.data || response.items || response || [];
         if (orders.length === 0) {
           $("#recentActivity").html("<p>No recent activity</p>");
         } else {
@@ -1421,11 +1357,227 @@ const MerchantApp = (() => {
           html += '</ul>';
           $("#recentActivity").html(html);
         }
-      } catch (error) {
-        console.error('Error fetching recent orders:', error);
+      },
+      error: function() {
         $("#recentActivity").html("<p>Error loading recent activity</p>");
       }
-    })();
+    });
+  }
+
+  // ==================== PROMOTION SECTION ====================
+  function loadPromotion() {
+    const html = `
+      <div class="section-container">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="section-title"><i class="bi bi-tag me-2"></i>Promotion Management</h2>
+          <button class="btn btn-primary" id="btnAddPromotion">
+            <i class="bi bi-plus-circle me-2"></i>Add Promotion
+          </button>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover" id="promotionTable">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Discount</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="promotionTableBody">
+                  <tr><td colspan="7" class="text-center">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    $("#dynamicContentContainer").show().html(html);
+    fetchPromotions();
+    
+    // Add promotion button handler
+    $(document).off('click', '#btnAddPromotion').on('click', '#btnAddPromotion', showPromotionModal);
+  }
+
+  function fetchPromotions() {
+    // Fetch promotions from API
+    $.ajax({
+      url: `${API_BASE_URL}/Promotions`,
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+      success: function(data) {
+        renderPromotionsTable(data);
+      },
+      error: function() {
+        $("#promotionTableBody").html('<tr><td colspan="7" class="text-center text-danger">Error loading promotions</td></tr>');
+      }
+    });
+  }
+
+  function renderPromotionsTable(promotions) {
+    if (!promotions || promotions.length === 0) {
+      $("#promotionTableBody").html('<tr><td colspan="7" class="text-center">No promotions found</td></tr>');
+      return;
+    }
+    let html = '';
+    promotions.forEach(promo => {
+      html += `
+        <tr>
+          <td>${promo.id || 'N/A'}</td>
+          <td>${promo.title || 'N/A'}</td>
+          <td>${promo.discount || 0}%</td>
+          <td>${promo.startDate || 'N/A'}</td>
+          <td>${promo.endDate || 'N/A'}</td>
+          <td><span class="badge ${promo.isActive ? 'bg-success' : 'bg-secondary'}">${promo.isActive ? 'Active' : 'Inactive'}</span></td>
+          <td>
+            <button class="btn btn-sm btn-primary me-1" onclick="editPromotion(${promo.id})">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="deletePromotion(${promo.id})">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    });
+    $("#promotionTableBody").html(html);
+  }
+
+  function showPromotionModal(id = null) {
+    const isEdit = id !== null;
+    const modal = `
+      <div class="modal fade" id="promotionModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">${isEdit ? 'Edit' : 'Add'} Promotion</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <form id="promotionForm">
+                <input type="hidden" id="promotionId" value="${id || ''}">
+                <div class="mb-3">
+                  <label class="form-label">Title</label>
+                  <input type="text" class="form-control" id="promotionTitle" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Description</label>
+                  <textarea class="form-control" id="promotionDescription" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Discount (%)</label>
+                  <input type="number" class="form-control" id="promotionDiscount" min="0" max="100" required>
+                </div>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="promotionStartDate" required>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="promotionEndDate" required>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="promotionIsActive" checked>
+                    <label class="form-check-label" for="promotionIsActive">Active</label>
+                  </div>
+                </div>
+              </form>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-primary" onclick="savePromotion()">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    $('body').append(modal);
+    const bsModal = new bootstrap.Modal(document.getElementById('promotionModal'));
+    bsModal.show();
+    $('#promotionModal').on('hidden.bs.modal', function() {
+      $(this).remove();
+    });
+    if (isEdit) loadPromotionData(id);
+  }
+
+  window.editPromotion = function(id) {
+    showPromotionModal(id);
+  };
+
+  window.deletePromotion = function(id) {
+    showConfirmModal('Delete Promotion', 'Are you sure you want to delete this promotion?', function() {
+      $.ajax({
+        url: `${API_BASE_URL}/Promotions/${id}`,
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+        success: function() {
+          fetchPromotions();
+          showNotification('Promotion deleted successfully', 'success');
+        },
+        error: function(xhr) {
+          showNotification(xhr.responseJSON?.message || 'Error deleting promotion', 'error');
+        }
+      });
+    });
+  };
+
+  window.savePromotion = function() {
+    if (!$('#promotionTitle').val().trim()) {
+      showNotification('Please enter a promotion title', 'error');
+      return;
+    }
+    const data = {
+      id: $('#promotionId').val() || 0,
+      title: $('#promotionTitle').val().trim(),
+      description: $('#promotionDescription').val().trim(),
+      discount: parseFloat($('#promotionDiscount').val()) || 0,
+      startDate: $('#promotionStartDate').val(),
+      endDate: $('#promotionEndDate').val(),
+      isActive: $('#promotionIsActive').is(':checked')
+    };
+    const method = data.id ? 'PUT' : 'POST';
+    const url = data.id ? `${API_BASE_URL}/Promotions/${data.id}` : `${API_BASE_URL}/Promotions`;
+    $.ajax({
+      url: url,
+      method: method,
+      contentType: 'application/json',
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+      data: JSON.stringify(data),
+      success: function() {
+        bootstrap.Modal.getInstance(document.getElementById('promotionModal')).hide();
+        fetchPromotions();
+        showNotification(`Promotion ${data.id ? 'updated' : 'created'} successfully`, 'success');
+      },
+      error: function(xhr) {
+        showNotification(xhr.responseJSON?.message || 'Error saving promotion', 'error');
+      }
+    });
+  };
+
+  function loadPromotionData(id) {
+    $.ajax({
+      url: `${API_BASE_URL}/Promotions/${id}`,
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+      success: function(data) {
+        $('#promotionId').val(data.id);
+        $('#promotionTitle').val(data.title);
+        $('#promotionDescription').val(data.description);
+        $('#promotionDiscount').val(data.discount);
+        $('#promotionStartDate').val(data.startDate);
+        $('#promotionEndDate').val(data.endDate);
+        $('#promotionIsActive').prop('checked', data.isActive);
+      }
+    });
   }
 
   // ==================== CUSTOMER SECTION ====================
@@ -2008,21 +2160,11 @@ const MerchantApp = (() => {
     page = parseInt($('#categoryPageNumber').val()) || page;
     pageSize = parseInt($('#categoryPageSize').val()) || pageSize;
     
-    const token = getAuthToken();
-    if (!token) {
-      $("#categoryTableBody").html(`<tr><td colspan="7" class="text-center text-danger">Authentication required. Please login again.</td></tr>`);
-      return;
-    }
-    
     $.ajax({
       url: `${API_BASE_URL}/Category?page=${page}&pageSize=${pageSize}`,
       method: 'GET',
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
       success: function(response) {
-        console.log('Categories API Response:', response);
         const categories = response.data || response.items || response || [];
         const totalCount = response.totalCount || response.total || categories.length;
         const totalPages = response.totalPages || Math.ceil(totalCount / pageSize);
@@ -2032,22 +2174,9 @@ const MerchantApp = (() => {
       },
       error: function(xhr) {
         console.error('Error fetching categories:', xhr);
-        console.error('Status:', xhr.status);
-        console.error('Response:', xhr.responseJSON || xhr.responseText);
-        
         let errorMsg = 'Error loading categories';
-        if (xhr.status === 0 || xhr.statusText === 'error') {
-          errorMsg = `CORS error: Unable to connect to API. The backend needs to allow requests from ${window.location.origin}. Please check Program.cs CORS configuration.`;
-        } else if (xhr.status === 401) {
-          errorMsg = 'Unauthorized. Please check your authentication token.';
-        } else if (xhr.status === 404) {
-          errorMsg = 'Category endpoint not found. Please check the API URL.';
-        } else if (xhr.status === 403) {
-          errorMsg = 'Forbidden. You may not have permission to access this resource.';
-        } else if (xhr.responseJSON && xhr.responseJSON.message) {
+        if (xhr.responseJSON && xhr.responseJSON.message) {
           errorMsg = xhr.responseJSON.message;
-        } else if (xhr.responseText) {
-          errorMsg = xhr.responseText;
         }
         $("#categoryTableBody").html(`<tr><td colspan="7" class="text-center text-danger">${errorMsg}</td></tr>`);
       }
@@ -2065,41 +2194,32 @@ const MerchantApp = (() => {
     }
     let html = '';
     categories.forEach(category => {
-      // Extract category ID properly - handle different property names and ensure it's a number/string
-      let categoryId = category.categoryId || category.id || category.CategoryId || category.ID;
-      if (categoryId && typeof categoryId === 'object') {
-        categoryId = categoryId.value || categoryId.id || null;
-      }
-      categoryId = categoryId ? String(categoryId) : null;
-      
-      if (!categoryId) {
-        console.warn('Category without ID:', category);
-        return; // Skip categories without valid IDs
-      }
-      
+      const categoryId = category.categoryId || category.id || category.CategoryId;
       html += `
         <tr>
-          <td>${categoryId}</td>
-          <td>${category.categoryName || category.name || category.CategoryName || 'N/A'}</td>
-          <td>${category.description || category.Description || 'N/A'}</td>
-          <td>${category.imageUrl || category.image || category.ImageUrl ? `<img src="${category.imageUrl || category.image || category.ImageUrl}" width="50" height="50" class="img-thumbnail">` : 'N/A'}</td>
+          <td>${categoryId || 'N/A'}</td>
+          <td>${category.categoryName || category.name || 'N/A'}</td>
+          <td>${category.description || 'N/A'}</td>
+          <td>${category.imageUrl ? `<img src="${category.imageUrl}" width="50" height="50" class="img-thumbnail">` : 'N/A'}</td>
           <td><span id="productCount-${categoryId}">Loading...</span></td>
           <td><span class="badge ${category.isActive !== false ? 'bg-success' : 'bg-secondary'}">${category.isActive !== false ? 'Active' : 'Inactive'}</span></td>
           <td>
-            <button class="btn btn-sm btn-info me-1" onclick="viewCategoryDetails('${categoryId}')" title="View Details">
+            <button class="btn btn-sm btn-info me-1" onclick="viewCategoryDetails(${categoryId})" title="View Details">
               <i class="bi bi-eye"></i>
             </button>
-            <button class="btn btn-sm btn-primary me-1" onclick="editCategory('${categoryId}')" title="Edit">
+            <button class="btn btn-sm btn-primary me-1" onclick="editCategory(${categoryId})" title="Edit">
               <i class="bi bi-pencil"></i>
             </button>
-            <button class="btn btn-sm btn-danger" onclick="deleteCategory('${categoryId}')" title="Delete">
+            <button class="btn btn-sm btn-danger" onclick="deleteCategory(${categoryId})" title="Delete">
               <i class="bi bi-trash"></i>
             </button>
           </td>
         </tr>
       `;
       // Fetch product count for each category
-      fetchProductCountByCategory(categoryId);
+      if (categoryId) {
+        fetchProductCountByCategory(categoryId);
+      }
     });
     $("#categoryTableBody").html(html);
   }
@@ -2120,17 +2240,7 @@ const MerchantApp = (() => {
   }
 
   function showCategoryModal(id = null) {
-    // Ensure ID is a string/number, not an object
-    let categoryIdValue = '';
-    if (id !== null && id !== undefined) {
-      if (typeof id === 'object') {
-        categoryIdValue = id.id || id.categoryId || id.value || '';
-      } else {
-        categoryIdValue = String(id);
-      }
-    }
-    
-    const isEdit = categoryIdValue !== '';
+    const isEdit = id !== null;
     const modal = `
       <div class="modal fade" id="categoryModal" tabindex="-1">
         <div class="modal-dialog">
@@ -2141,7 +2251,7 @@ const MerchantApp = (() => {
             </div>
             <div class="modal-body">
               <form id="categoryForm" enctype="multipart/form-data">
-                <input type="hidden" id="categoryId" value="${categoryIdValue}">
+                <input type="hidden" id="categoryId" value="${id || ''}">
                 <div class="mb-3">
                   <label class="form-label">Name <span class="text-danger">*</span></label>
                   <input type="text" class="form-control" id="categoryName" required>
@@ -2177,29 +2287,12 @@ const MerchantApp = (() => {
     $('#categoryModal').on('hidden.bs.modal', function() {
       $(this).remove();
     });
-    if (isEdit && categoryIdValue) {
-      loadCategoryData(categoryIdValue);
-    }
+    if (isEdit) loadCategoryData(id);
   }
 
   window.viewCategoryDetails = function(categoryId) {
-    // Ensure ID is a string/number, not an object
     if (!categoryId) {
-      showNotification('Category ID is required', 'error');
-      return;
-    }
-    if (typeof categoryId === 'object') {
-      categoryId = categoryId.id || categoryId.categoryId || categoryId.value || null;
-      if (!categoryId) {
-        showNotification('Invalid category ID', 'error');
-        return;
-      }
-    }
-    categoryId = String(categoryId);
-    
-    const token = getAuthToken();
-    if (!token) {
-      showNotification('Authentication required. Please login again.', 'error');
+      alert('Category ID is required');
       return;
     }
     
@@ -2207,10 +2300,7 @@ const MerchantApp = (() => {
     $.ajax({
       url: `${API_BASE_URL}/Category/${categoryId}`,
       method: 'GET',
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
       success: function(category) {
         // Fetch product count
         $.ajax({
@@ -2264,7 +2354,7 @@ const MerchantApp = (() => {
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              <button type="button" class="btn btn-warning" onclick="editCategory('${categoryId}'); bootstrap.Modal.getInstance(document.getElementById('categoryDetailsModal')).hide();">
+              <button type="button" class="btn btn-warning" onclick="editCategory(${categoryId}); bootstrap.Modal.getInstance(document.getElementById('categoryDetailsModal')).hide();">
                 <i class="bi bi-pencil me-1"></i>Edit Category
               </button>
             </div>
@@ -2346,39 +2436,12 @@ const MerchantApp = (() => {
   }
 
   window.editCategory = function(id) {
-    // Ensure ID is a string/number, not an object
-    if (!id) {
-      showNotification('Category ID is required', 'error');
-      return;
-    }
-    if (typeof id === 'object') {
-      id = id.id || id.categoryId || id.value || null;
-      if (!id) {
-        showNotification('Invalid category ID', 'error');
-        return;
-      }
-    }
-    showCategoryModal(String(id));
+    showCategoryModal(id);
   };
 
   window.deleteCategory = function(id) {
-    // Ensure ID is a string/number, not an object
     if (!id) {
       showNotification('Category ID is required', 'error');
-      return;
-    }
-    if (typeof id === 'object') {
-      id = id.id || id.categoryId || id.value || null;
-      if (!id) {
-        showNotification('Invalid category ID', 'error');
-        return;
-      }
-    }
-    id = String(id);
-    
-    const token = getAuthToken();
-    if (!token) {
-      showNotification('Authentication required. Please login again.', 'error');
       return;
     }
     
@@ -2386,10 +2449,7 @@ const MerchantApp = (() => {
       $.ajax({
         url: `${API_BASE_URL}/Category/${id}`,
         method: 'DELETE',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` },
         success: function(response) {
           fetchCategories();
           showNotification('Category deleted successfully', 'success');
@@ -2407,34 +2467,10 @@ const MerchantApp = (() => {
   };
 
   window.saveCategory = function() {
-    let categoryId = $('#categoryId').val();
-    const categoryName = $('#categoryName').val();
-    
-    // Ensure categoryId is a valid string/number, not an object
-    if (categoryId) {
-      if (typeof categoryId === 'object') {
-        categoryId = categoryId.id || categoryId.categoryId || categoryId.value || null;
-      } else {
-        categoryId = String(categoryId).trim();
-        if (categoryId === '' || categoryId === 'undefined' || categoryId === 'null') {
-          categoryId = null;
-        }
-      }
-    }
-    
-    if (!categoryName || categoryName.trim() === '') {
-      showNotification('Category name is required', 'error');
-      return;
-    }
-    
-    const token = getAuthToken();
-    if (!token) {
-      showNotification('Authentication required. Please login again.', 'error');
-      return;
-    }
-    
+    const categoryId = $('#categoryId').val();
     const formData = new FormData();
-    formData.append('CategoryName', categoryName.trim());
+    
+    formData.append('CategoryName', $('#categoryName').val());
     formData.append('CategoryDescription', $('#categoryDescription').val() || '');
     
     const imageFile = $('#categoryImage')[0].files[0];
@@ -2445,124 +2481,45 @@ const MerchantApp = (() => {
     const method = categoryId ? 'PUT' : 'POST';
     const url = categoryId ? `${API_BASE_URL}/Category/${categoryId}` : `${API_BASE_URL}/Category`;
     
-    console.log(`Saving category: ${method} ${url}`);
-    console.log('Category ID:', categoryId);
-    
     $.ajax({
       url: url,
       method: method,
       headers: { 
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${getAuthToken()}`
       },
       processData: false,
       contentType: false,
       data: formData,
       success: function(response) {
-        console.log('Category saved successfully:', response);
         bootstrap.Modal.getInstance(document.getElementById('categoryModal')).hide();
         fetchCategories();
         showNotification(`Category ${categoryId ? 'updated' : 'created'} successfully`, 'success');
       },
       error: function(xhr) {
         console.error('Error saving category:', xhr);
-        console.error('Status:', xhr.status);
-        console.error('Response:', xhr.responseJSON || xhr.responseText);
-        
         let errorMsg = 'Error saving category';
-        if (xhr.status === 0 || xhr.statusText === 'error') {
-          errorMsg = `CORS error: Unable to connect to API. The backend needs to allow requests from ${window.location.origin}. Please check Program.cs CORS configuration.`;
-        } else if (xhr.status === 401) {
-          errorMsg = 'Unauthorized. Please check your authentication token.';
-        } else if (xhr.status === 400) {
-          errorMsg = 'Invalid data. Please check all required fields.';
-        } else if (xhr.status === 404) {
-          errorMsg = 'Category not found. The category may have been deleted.';
-        } else if (xhr.status === 403) {
-          errorMsg = 'Forbidden. You may not have permission to perform this action.';
-        } else if (xhr.responseJSON && xhr.responseJSON.message) {
+        if (xhr.responseJSON && xhr.responseJSON.message) {
           errorMsg = xhr.responseJSON.message;
-        } else if (xhr.responseText) {
-          errorMsg = xhr.responseText;
         }
-        showNotification(errorMsg, 'error');
+        alert(errorMsg);
       }
     });
   };
 
   function loadCategoryData(id) {
-    // Ensure ID is a string/number, not an object
-    if (!id) {
-      console.error('Category ID is required');
-      return;
-    }
-    if (typeof id === 'object') {
-      id = id.id || id.categoryId || id.value || null;
-      if (!id) {
-        console.error('Invalid category ID');
-        return;
-      }
-    }
-    id = String(id);
-    
-    const token = getAuthToken();
-    if (!token) {
-      showNotification('Authentication required. Please login again.', 'error');
-      return;
-    }
-    
     $.ajax({
       url: `${API_BASE_URL}/Category/${id}`,
       method: 'GET',
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
       success: function(data) {
-        console.log('Category data loaded:', data);
-        
-        // Extract and set category ID as string
-        const loadedId = data.categoryId || data.id || data.CategoryId || data.ID;
-        if (loadedId) {
-          $('#categoryId').val(String(loadedId));
-        } else {
-          console.error('No category ID found in response:', data);
-          showNotification('Error: Category ID not found in response', 'error');
-          return;
-        }
-        
-        $('#categoryName').val(data.categoryName || data.name || data.CategoryName || '');
-        $('#categoryDescription').val(data.description || data.categoryDescription || data.CategoryDescription || '');
-        $('#categoryIsActive').prop('checked', data.isActive !== false && data.isActive !== undefined);
-        
-        // If there's an existing image, show it
-        if (data.imageUrl || data.image || data.ImageUrl) {
-          const imageUrl = data.imageUrl || data.image || data.ImageUrl;
-          // Remove any existing preview
-          $('#categoryImage').parent().find('.img-thumbnail').parent().remove();
-          const imagePreview = `<div class="mt-2"><img src="${imageUrl}" class="img-thumbnail" style="max-width: 200px;"><br><small class="text-muted">Current image</small></div>`;
-          $('#categoryImage').parent().append(imagePreview);
-        }
+        $('#categoryId').val(data.categoryId || data.id || data.CategoryId);
+        $('#categoryName').val(data.categoryName || data.name);
+        $('#categoryDescription').val(data.description || data.categoryDescription);
+        $('#categoryIsActive').prop('checked', data.isActive !== false);
       },
       error: function(xhr) {
         console.error('Error loading category:', xhr);
-        console.error('Status:', xhr.status);
-        console.error('Response:', xhr.responseJSON || xhr.responseText);
-        
-        let errorMsg = 'Error loading category data';
-        if (xhr.status === 0 || xhr.statusText === 'error') {
-          errorMsg = `CORS error: Unable to connect to API. The backend needs to allow requests from ${window.location.origin}. Please check Program.cs CORS configuration.`;
-        } else if (xhr.status === 404) {
-          errorMsg = 'Category not found';
-        } else if (xhr.status === 401) {
-          errorMsg = 'Unauthorized. Please check your authentication token.';
-        } else if (xhr.status === 403) {
-          errorMsg = 'Forbidden. You may not have permission to access this resource.';
-        } else if (xhr.responseJSON && xhr.responseJSON.message) {
-          errorMsg = xhr.responseJSON.message;
-        } else if (xhr.responseText) {
-          errorMsg = xhr.responseText;
-        }
-        showNotification(errorMsg, 'error');
+        alert('Error loading category data');
       }
     });
   }
@@ -2592,22 +2549,9 @@ const MerchantApp = (() => {
                   </tr>
                 </thead>
                 <tbody id="subcategoryTableBody">
-                  <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                  <tr><td colspan="7" class="text-center">Loading...</td></tr>
                 </tbody>
               </table>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mt-3">
-              <div>
-                <label class="me-2">Page:</label>
-                <input type="number" id="subcategoryPageNumber" class="form-control d-inline-block" style="width: 80px;" value="1" min="1">
-                <label class="ms-2 me-2">Page Size:</label>
-                <select id="subcategoryPageSize" class="form-select d-inline-block" style="width: 100px;">
-                  <option value="10">10</option>
-                  <option value="20">20</option>
-                  <option value="50">50</option>
-                </select>
-              </div>
-              <div id="subcategoryPaginationInfo"></div>
             </div>
           </div>
         </div>
@@ -2617,15 +2561,9 @@ const MerchantApp = (() => {
     fetchSubcategories();
     
     $(document).off('click', '#btnAddSubcategory').on('click', '#btnAddSubcategory', showSubcategoryModal);
-    $(document).off('change', '#subcategoryPageNumber, #subcategoryPageSize').on('change', '#subcategoryPageNumber, #subcategoryPageSize', function() {
-      fetchSubcategories();
-    });
   }
 
-  function fetchSubcategories(page = 1, pageSize = 10) {
-    page = parseInt($('#subcategoryPageNumber').val()) || page;
-    pageSize = parseInt($('#subcategoryPageSize').val()) || pageSize;
-    
+  function fetchSubcategories() {
     $.ajax({
       url: `${API_BASE_URL}/Category/subcategory`,
       method: 'GET',
@@ -2639,59 +2577,34 @@ const MerchantApp = (() => {
         if (xhr.responseJSON && xhr.responseJSON.message) {
           errorMsg = xhr.responseJSON.message;
         }
-        $("#subcategoryTableBody").html(`<tr><td colspan="6" class="text-center text-danger">${errorMsg}</td></tr>`);
+        $("#subcategoryTableBody").html(`<tr><td colspan="7" class="text-center text-danger">${errorMsg}</td></tr>`);
       }
     });
-  }
-  
-  function updateSubcategoryPaginationInfo(currentPage, totalPages, totalCount) {
-    $('#subcategoryPaginationInfo').text(`Page ${currentPage} of ${totalPages} (Total: ${totalCount} subcategories)`);
   }
 
   function renderSubcategoriesTable(subcategories) {
     if (!subcategories || subcategories.length === 0) {
-      $("#subcategoryTableBody").html('<tr><td colspan="6" class="text-center">No subcategories found</td></tr>');
+      $("#subcategoryTableBody").html('<tr><td colspan="7" class="text-center">No subcategories found</td></tr>');
       return;
     }
     let html = '';
     subcategories.forEach(sub => {
-      // Extract subcategory ID properly - handle different property names and ensure it's a number/string
-      // Note: 0 is a valid ID, so we need to check for null/undefined specifically, not just falsy values
-      let subcategoryId = sub.subCategoryId !== undefined && sub.subCategoryId !== null ? sub.subCategoryId 
-                       : sub.id !== undefined && sub.id !== null ? sub.id
-                       : sub.SubCategoryId !== undefined && sub.SubCategoryId !== null ? sub.SubCategoryId
-                       : sub.ID !== undefined && sub.ID !== null ? sub.ID
-                       : null;
-      
-      if (subcategoryId !== null && subcategoryId !== undefined && typeof subcategoryId === 'object') {
-        subcategoryId = subcategoryId.value !== undefined ? subcategoryId.value 
-                     : subcategoryId.id !== undefined ? subcategoryId.id 
-                     : null;
-      }
-      
-      // Convert to string, but allow 0 as valid ID
-      if (subcategoryId === null || subcategoryId === undefined) {
-        console.warn('Subcategory without ID:', sub);
-        return; // Skip subcategories without valid IDs
-      }
-      
-      subcategoryId = String(subcategoryId);
-      
+      const subcategoryId = sub.subCategoryId || sub.id || sub.SubCategoryId;
       html += `
         <tr>
-          <td>${subcategoryId}</td>
-          <td>${sub.subCategoryName || sub.name || sub.SubCategoryName || 'N/A'}</td>
-          <td>${sub.categoryName || sub.CategoryName || sub.categoryId || 'N/A'}</td>
-          <td>${sub.subCategoryDescription || sub.description || sub.SubCategoryDescription || 'N/A'}</td>
+          <td>${subcategoryId || 'N/A'}</td>
+          <td>${sub.subCategoryName || sub.name || 'N/A'}</td>
+          <td>${sub.categoryName || sub.categoryId || 'N/A'}</td>
+          <td>${sub.subCategoryDescription || sub.description || 'N/A'}</td>
           <td><span class="badge ${sub.isActive !== false ? 'bg-success' : 'bg-secondary'}">${sub.isActive !== false ? 'Active' : 'Inactive'}</span></td>
           <td>
-            <button class="btn btn-sm btn-info me-1" onclick="viewSubcategoryDetails('${subcategoryId}')" title="View Details">
+            <button class="btn btn-sm btn-info me-1" onclick="viewSubcategoryDetails(${subcategoryId})" title="View Details">
               <i class="bi bi-eye"></i>
             </button>
-            <button class="btn btn-sm btn-primary me-1" onclick="editSubcategory('${subcategoryId}')" title="Edit">
+            <button class="btn btn-sm btn-primary me-1" onclick="editSubcategory(${subcategoryId})" title="Edit">
               <i class="bi bi-pencil"></i>
             </button>
-            <button class="btn btn-sm btn-danger" onclick="deleteSubcategory('${subcategoryId}')" title="Delete">
+            <button class="btn btn-sm btn-danger" onclick="deleteSubcategory(${subcategoryId})" title="Delete">
               <i class="bi bi-trash"></i>
             </button>
           </td>
@@ -2702,17 +2615,7 @@ const MerchantApp = (() => {
   }
 
   function showSubcategoryModal(id = null) {
-    // Ensure ID is a string/number, not an object
-    let subcategoryIdValue = '';
-    if (id !== null && id !== undefined) {
-      if (typeof id === 'object') {
-        subcategoryIdValue = id.id || id.subCategoryId || id.value || '';
-      } else {
-        subcategoryIdValue = String(id);
-      }
-    }
-    
-    const isEdit = subcategoryIdValue !== '';
+    const isEdit = id !== null;
     const modal = `
       <div class="modal fade" id="subcategoryModal" tabindex="-1">
         <div class="modal-dialog">
@@ -2723,7 +2626,7 @@ const MerchantApp = (() => {
             </div>
             <div class="modal-body">
               <form id="subcategoryForm" enctype="multipart/form-data">
-                <input type="hidden" id="subcategoryId" value="${subcategoryIdValue}">
+                <input type="hidden" id="subcategoryId" value="${id || ''}">
                 <div class="mb-3">
                   <label class="form-label">Category <span class="text-danger">*</span></label>
                   <select class="form-select" id="subcategoryCategoryId" required>
@@ -2760,7 +2663,7 @@ const MerchantApp = (() => {
     $('#subcategoryModal').on('hidden.bs.modal', function() {
       $(this).remove();
     });
-    if (isEdit) loadSubcategoryData(subcategoryIdValue);
+    if (isEdit) loadSubcategoryData(id);
   }
 
   function loadCategoriesForSubcategory() {
@@ -2787,33 +2690,15 @@ const MerchantApp = (() => {
   }
 
   window.viewSubcategoryDetails = function(subcategoryId) {
-    // Ensure ID is a string/number, not an object
     if (!subcategoryId) {
-      showNotification('Subcategory ID is required', 'error');
-      return;
-    }
-    if (typeof subcategoryId === 'object') {
-      subcategoryId = subcategoryId.id || subcategoryId.subCategoryId || subcategoryId.value || null;
-      if (!subcategoryId) {
-        showNotification('Invalid subcategory ID', 'error');
-        return;
-      }
-    }
-    subcategoryId = String(subcategoryId);
-    
-    const token = getAuthToken();
-    if (!token) {
-      showNotification('Authentication required. Please login again.', 'error');
+      alert('Subcategory ID is required');
       return;
     }
     
     $.ajax({
       url: `${API_BASE_URL}/Category/subcategory/${subcategoryId}`,
       method: 'GET',
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
       success: function(subcategory) {
         showSubcategoryDetailsModal(subcategory);
       },
@@ -2825,42 +2710,37 @@ const MerchantApp = (() => {
   };
 
   function showSubcategoryDetailsModal(subcategory) {
-    let subcategoryId = subcategory.subCategoryId || subcategory.id || subcategory.SubCategoryId || subcategory.ID;
-    if (subcategoryId && typeof subcategoryId === 'object') {
-      subcategoryId = subcategoryId.value || subcategoryId.id || null;
-    }
-    subcategoryId = subcategoryId ? String(subcategoryId) : 'N/A';
-    
+    const subcategoryId = subcategory.subCategoryId || subcategory.id || subcategory.SubCategoryId;
     const modal = `
       <div class="modal fade" id="subcategoryDetailsModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
           <div class="modal-content">
             <div class="modal-header">
-              <h5 class="modal-title">Subcategory Details - ${subcategory.subCategoryName || subcategory.name || subcategory.SubCategoryName || 'N/A'}</h5>
+              <h5 class="modal-title">Subcategory Details - ${subcategory.subCategoryName || subcategory.name || 'N/A'}</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
               <div class="row mb-3">
                 <div class="col-md-6">
-                  <strong>Subcategory ID:</strong> ${subcategoryId}<br>
-                  <strong>Name:</strong> ${subcategory.subCategoryName || subcategory.name || subcategory.SubCategoryName || 'N/A'}<br>
-                  <strong>Description:</strong> ${subcategory.subCategoryDescription || subcategory.description || subcategory.SubCategoryDescription || 'N/A'}<br>
+                  <strong>Subcategory ID:</strong> ${subcategoryId || 'N/A'}<br>
+                  <strong>Name:</strong> ${subcategory.subCategoryName || subcategory.name || 'N/A'}<br>
+                  <strong>Description:</strong> ${subcategory.subCategoryDescription || subcategory.description || 'N/A'}<br>
                 </div>
                 <div class="col-md-6">
-                  <strong>Category:</strong> ${subcategory.categoryName || subcategory.CategoryName || subcategory.categoryId || 'N/A'}<br>
+                  <strong>Category:</strong> ${subcategory.categoryName || subcategory.categoryId || 'N/A'}<br>
                   <strong>Status:</strong> <span class="badge ${subcategory.isActive !== false ? 'bg-success' : 'bg-secondary'}">${subcategory.isActive !== false ? 'Active' : 'Inactive'}</span><br>
-                  ${subcategory.imageUrl || subcategory.image || subcategory.ImageUrl ? `<img src="${subcategory.imageUrl || subcategory.image || subcategory.ImageUrl}" class="img-thumbnail mt-2" style="max-width: 200px;">` : ''}
+                  ${subcategory.imageUrl ? `<img src="${subcategory.imageUrl}" class="img-thumbnail mt-2" style="max-width: 200px;">` : ''}
                 </div>
               </div>
               <div class="mt-3">
-                <button class="btn btn-primary" onclick="viewProductsBySubcategory('${subcategoryId}')">
+                <button class="btn btn-primary" onclick="viewProductsBySubcategory(${subcategoryId})">
                   <i class="bi bi-box-seam me-1"></i>View Products
                 </button>
               </div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              <button type="button" class="btn btn-warning" onclick="editSubcategory('${subcategoryId}'); bootstrap.Modal.getInstance(document.getElementById('subcategoryDetailsModal')).hide();">
+              <button type="button" class="btn btn-warning" onclick="editSubcategory(${subcategoryId}); bootstrap.Modal.getInstance(document.getElementById('subcategoryDetailsModal')).hide();">
                 <i class="bi bi-pencil me-1"></i>Edit Subcategory
               </button>
             </div>
@@ -2877,33 +2757,15 @@ const MerchantApp = (() => {
   }
 
   window.viewProductsBySubcategory = function(subcategoryId) {
-    // Ensure ID is a string/number, not an object
     if (!subcategoryId) {
-      showNotification('Subcategory ID is required', 'error');
-      return;
-    }
-    if (typeof subcategoryId === 'object') {
-      subcategoryId = subcategoryId.id || subcategoryId.subCategoryId || subcategoryId.value || null;
-      if (!subcategoryId) {
-        showNotification('Invalid subcategory ID', 'error');
-        return;
-      }
-    }
-    subcategoryId = String(subcategoryId);
-    
-    const token = getAuthToken();
-    if (!token) {
-      showNotification('Authentication required. Please login again.', 'error');
+      alert('Subcategory ID is required');
       return;
     }
     
     $.ajax({
       url: `${API_BASE_URL}/Category/subcategory/${subcategoryId}/products?page=1&pageSize=10`,
       method: 'GET',
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
       success: function(response) {
         const products = response.data || response.items || response || [];
         showProductsModal(products, `Products in Subcategory ${subcategoryId}`);
@@ -2916,39 +2778,12 @@ const MerchantApp = (() => {
   };
 
   window.editSubcategory = function(id) {
-    // Ensure ID is a string/number, not an object
-    if (!id) {
-      showNotification('Subcategory ID is required', 'error');
-      return;
-    }
-    if (typeof id === 'object') {
-      id = id.id || id.subCategoryId || id.value || null;
-      if (!id) {
-        showNotification('Invalid subcategory ID', 'error');
-        return;
-      }
-    }
-    showSubcategoryModal(String(id));
+    showSubcategoryModal(id);
   };
 
   window.deleteSubcategory = function(id) {
-    // Ensure ID is a string/number, not an object
     if (!id) {
       showNotification('Subcategory ID is required', 'error');
-      return;
-    }
-    if (typeof id === 'object') {
-      id = id.id || id.subCategoryId || id.value || null;
-      if (!id) {
-        showNotification('Invalid subcategory ID', 'error');
-        return;
-      }
-    }
-    id = String(id);
-    
-    const token = getAuthToken();
-    if (!token) {
-      showNotification('Authentication required. Please login again.', 'error');
       return;
     }
     
@@ -2956,10 +2791,7 @@ const MerchantApp = (() => {
       $.ajax({
         url: `${API_BASE_URL}/Category/subcategory/${id}`,
         method: 'DELETE',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` },
         success: function(response) {
           fetchSubcategories();
           showNotification('Subcategory deleted successfully', 'success');
@@ -3012,91 +2844,26 @@ const MerchantApp = (() => {
         if (xhr.responseJSON && xhr.responseJSON.message) {
           errorMsg = xhr.responseJSON.message;
         }
-        showNotification(errorMsg, 'error');
+        alert(errorMsg);
       }
     });
   };
 
   function loadSubcategoryData(id) {
-    // Ensure ID is a string/number, not an object
-    if (!id) {
-      console.error('Subcategory ID is required');
-      return;
-    }
-    if (typeof id === 'object') {
-      id = id.id || id.subCategoryId || id.value || null;
-      if (!id) {
-        console.error('Invalid subcategory ID');
-        return;
-      }
-    }
-    id = String(id);
-    
-    const token = getAuthToken();
-    if (!token) {
-      showNotification('Authentication required. Please login again.', 'error');
-      return;
-    }
-    
     $.ajax({
       url: `${API_BASE_URL}/Category/subcategory/${id}`,
       method: 'GET',
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
       success: function(data) {
-        console.log('Subcategory data loaded:', data);
-        
-        // Extract and set subcategory ID as string
-        const loadedId = data.subCategoryId || data.id || data.SubCategoryId || data.ID;
-        if (loadedId) {
-          $('#subcategoryId').val(String(loadedId));
-        } else {
-          console.error('No subcategory ID found in response:', data);
-          showNotification('Error: Subcategory ID not found in response', 'error');
-          return;
-        }
-        
-        // Set category ID
-        const catId = data.categoryId || data.CategoryId || data.categoryID;
-        if (catId) {
-          $('#subcategoryCategoryId').val(String(catId));
-        }
-        
-        $('#subcategoryName').val(data.subCategoryName || data.name || data.SubCategoryName || '');
-        $('#subcategoryDescription').val(data.subCategoryDescription || data.description || data.SubCategoryDescription || '');
-        $('#subcategoryIsActive').prop('checked', data.isActive !== false && data.isActive !== undefined);
-        
-        // If there's an existing image, show it
-        if (data.imageUrl || data.image || data.ImageUrl) {
-          const imageUrl = data.imageUrl || data.image || data.ImageUrl;
-          // Remove any existing preview
-          $('#subcategoryImage').parent().find('.img-thumbnail').parent().remove();
-          const imagePreview = `<div class="mt-2"><img src="${imageUrl}" class="img-thumbnail" style="max-width: 200px;"><br><small class="text-muted">Current image</small></div>`;
-          $('#subcategoryImage').parent().append(imagePreview);
-        }
+        $('#subcategoryId').val(data.subCategoryId || data.id || data.SubCategoryId);
+        $('#subcategoryCategoryId').val(data.categoryId || data.CategoryId);
+        $('#subcategoryName').val(data.subCategoryName || data.name);
+        $('#subcategoryDescription').val(data.subCategoryDescription || data.description);
+        $('#subcategoryIsActive').prop('checked', data.isActive !== false);
       },
       error: function(xhr) {
         console.error('Error loading subcategory:', xhr);
-        console.error('Status:', xhr.status);
-        console.error('Response:', xhr.responseJSON || xhr.responseText);
-        
-        let errorMsg = 'Error loading subcategory data';
-        if (xhr.status === 0 || xhr.statusText === 'error') {
-          errorMsg = `CORS error: Unable to connect to API. The backend needs to allow requests from ${window.location.origin}. Please check Program.cs CORS configuration.`;
-        } else if (xhr.status === 404) {
-          errorMsg = 'Subcategory not found';
-        } else if (xhr.status === 401) {
-          errorMsg = 'Unauthorized. Please check your authentication token.';
-        } else if (xhr.status === 403) {
-          errorMsg = 'Forbidden. You may not have permission to access this resource.';
-        } else if (xhr.responseJSON && xhr.responseJSON.message) {
-          errorMsg = xhr.responseJSON.message;
-        } else if (xhr.responseText) {
-          errorMsg = xhr.responseText;
-        }
-        showNotification(errorMsg, 'error');
+        alert('Error loading subcategory data');
       }
     });
   }
@@ -4369,23 +4136,6 @@ const MerchantApp = (() => {
 
   function updateTransactionPaginationInfo(currentPage, totalPages, totalCount) {
     $('#transactionPaginationInfo').text(`Page ${currentPage} of ${totalPages} (Total: ${totalCount} transactions)`);
-  }
-
-  // ==================== SWAPPER SECTION ====================
-  function loadSwapper() {
-    const html = `
-      <div class="section-container">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2 class="section-title"><i class="bi bi-arrow-left-right me-2"></i>Swapper</h2>
-        </div>
-        <div class="card">
-          <div class="card-body">
-            <p class="text-muted">Swapper section content will be displayed here.</p>
-          </div>
-        </div>
-      </div>
-    `;
-    $("#dynamicContentContainer").show().html(html);
   }
 
   return {
