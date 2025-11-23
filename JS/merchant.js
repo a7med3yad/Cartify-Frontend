@@ -529,18 +529,44 @@ const MerchantApp = (() => {
   // Get Auth Token
   function getAuthToken() {
     try {
-      // Try localStorage first, then sessionStorage, fallback to empty object
-      const localStorageAuth = localStorage.getItem('Auth');
-      const sessionStorageAuth = sessionStorage.getItem('Auth');
-      const authString = localStorageAuth || sessionStorageAuth || '{}';
+      // Try localStorage first, then sessionStorage
+      let authString = localStorage.getItem('Auth');
+      if (!authString) {
+        authString = sessionStorage.getItem('Auth');
+      }
+      
+      // If no auth data found in either storage, return empty
+      if (!authString) {
+        console.warn('getAuthToken: No auth data found in localStorage or sessionStorage');
+        return '';
+      }
       
       // Parse the JSON string
       const authData = JSON.parse(authString);
       
-      // Return the JWT token if it exists
-      return authData?.jwt || '';
+      // Extract and validate the JWT token
+      const token = authData?.jwt || authData?.token || '';
+      
+      if (!token || typeof token !== 'string' || token.trim() === '') {
+        console.warn('getAuthToken: Token is empty or invalid');
+        return '';
+      }
+      
+      // Validate token format (should have 3 parts separated by dots)
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3) {
+        console.warn('getAuthToken: Invalid token format (expected 3 parts, got', tokenParts.length, ')');
+        return '';
+      }
+      
+      console.log('getAuthToken: ✅ Valid token retrieved');
+      return token.trim();
     } catch (error) {
-      console.error('Error retrieving auth token:', error);
+      console.error('getAuthToken: Error retrieving auth token:', error);
+      console.error('getAuthToken: Error details:', {
+        message: error.message,
+        stack: error.stack
+      });
       // If there's invalid JSON or any error, return empty string
       return '';
     }
@@ -1209,30 +1235,53 @@ const MerchantApp = (() => {
   }
 
   function ensureMerchantAccess() {
+    // Prevent redirect loops - if we're already on login page, don't redirect again
+    if (window.location.pathname.includes('login.html')) {
+      console.log('ensureMerchantAccess: Already on login page, skipping check');
+      return false;
+    }
+
     const token = getAuthToken();
-    if (!token) {
-      console.warn('ensureMerchantAccess: No token found, redirecting to login');
-      window.location.href = "login.html";
+    console.log('ensureMerchantAccess: Token retrieved:', token ? 'Token exists' : 'No token');
+    
+    if (!token || token.trim() === '') {
+      console.warn('ensureMerchantAccess: No valid token found, redirecting to login');
+      // Small delay to prevent race conditions with other scripts
+      setTimeout(() => {
+        if (!getAuthToken()) {
+          window.location.href = "login.html";
+        }
+      }, 100);
       return false;
     }
     
     const roles = getCurrentUserRoles();
-    console.log('ensureMerchantAccess: User roles:', roles);
+    console.log('ensureMerchantAccess: User roles extracted:', roles);
     console.log('ensureMerchantAccess: Looking for role:', MERCHANT_ROLE_NAME);
     
     // Check if user has Merchant role (case-insensitive check for safety)
-    const hasMerchantRole = roles.some(role => 
-      role && role.toString().toLowerCase() === MERCHANT_ROLE_NAME.toLowerCase()
-    );
+    // Also handle variations like "Merchant", "merchant", "MERCHANT"
+    const hasMerchantRole = roles.some(role => {
+      if (!role) return false;
+      const roleStr = role.toString().trim();
+      return roleStr.toLowerCase() === MERCHANT_ROLE_NAME.toLowerCase() ||
+             roleStr === MERCHANT_ROLE_NAME;
+    });
+    
+    console.log('ensureMerchantAccess: Has Merchant role?', hasMerchantRole);
     
     if (!hasMerchantRole) {
-      console.warn('ensureMerchantAccess: User does not have Merchant role, redirecting to index');
+      console.warn('ensureMerchantAccess: User does not have Merchant role. Roles found:', roles);
+      console.warn('ensureMerchantAccess: Redirecting to index.html');
       setRoleMode(ROLE_MODES.CUSTOMER);
-      window.location.href = "index.html";
+      // Small delay to prevent race conditions
+      setTimeout(() => {
+        window.location.href = "index.html";
+      }, 100);
       return false;
     }
     
-    console.log('ensureMerchantAccess: Merchant access granted');
+    console.log('ensureMerchantAccess: ✅ Merchant access granted successfully');
     return true;
   }
 
@@ -5217,8 +5266,21 @@ const MerchantApp = (() => {
   };
 })();
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (MerchantApp?.init) {
-    MerchantApp.init();
+// Initialize immediately when script loads to prevent other scripts from redirecting
+(function() {
+  // Run initialization as soon as possible
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      if (MerchantApp?.init) {
+        console.log('MerchantApp: Initializing on DOMContentLoaded');
+        MerchantApp.init();
+      }
+    });
+  } else {
+    // DOM is already loaded, initialize immediately
+    if (MerchantApp?.init) {
+      console.log('MerchantApp: Initializing immediately (DOM already loaded)');
+      MerchantApp.init();
+    }
   }
-});
+})();
