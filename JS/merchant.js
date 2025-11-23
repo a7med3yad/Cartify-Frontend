@@ -2,6 +2,10 @@ const MerchantApp = (() => {
   'use strict';
   const API_BASE_URL = 'https://cartify.runasp.net/api';
 
+  // Global mapping to store attribute name -> attributeId
+  // This will be populated when attributes are loaded
+  let attributeNameToIdMap = {};
+
   const sectionLoaders = Object.freeze({
     Dashboard: loadDashboard,
     Customer: loadCustomer,
@@ -1390,7 +1394,11 @@ const MerchantApp = (() => {
     (async () => {
       try {
         const token = getAuthToken();
-        if (!token) return;
+        if (!token) {
+          console.warn('fetchDashboardData: No token for customers count');
+          $("#totalCustomers").text("0");
+          return;
+        }
         
         const response = await fetch(`${API_BASE_URL}/merchant/customers/store/${storeId}/count`, {
           method: 'GET',
@@ -1402,13 +1410,24 @@ const MerchantApp = (() => {
         });
         
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          // Handle 404 or other errors gracefully
+          if (response.status === 404) {
+            console.warn(`Customers count endpoint not found (404). Store ID: ${storeId}`);
+          } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          $("#totalCustomers").text("0");
+          return;
         }
         
         const data = await response.json();
-        $("#totalCustomers").text(data.totalCustomers || 0);
+        $("#totalCustomers").text(data.totalCustomers || data.count || 0);
       } catch (error) {
         console.error('Error fetching customers count:', error);
+        // Check if it's a CORS error
+        if (error.message && error.message.includes('Failed to fetch')) {
+          console.warn('⚠️ CORS error: Backend needs to allow origin', window.location.origin);
+        }
         $("#totalCustomers").text("0");
       }
     })();
@@ -1417,7 +1436,11 @@ const MerchantApp = (() => {
     (async () => {
       try {
         const token = getAuthToken();
-        if (!token) return;
+        if (!token) {
+          console.warn('fetchDashboardData: No token for orders count');
+          $("#totalOrders").text("0");
+          return;
+        }
         
         const response = await fetch(`${API_BASE_URL}/merchant/orders/store/${storeId}?page=1&pageSize=1`, {
           method: 'GET',
@@ -1429,7 +1452,14 @@ const MerchantApp = (() => {
         });
         
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          // Handle 404 or other errors gracefully
+          if (response.status === 404) {
+            console.warn(`Orders endpoint not found (404). Store ID: ${storeId}`);
+          } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          $("#totalOrders").text("0");
+          return;
         }
         
         const data = await response.json();
@@ -1437,15 +1467,26 @@ const MerchantApp = (() => {
         $("#totalOrders").text(totalOrders);
       } catch (error) {
         console.error('Error fetching orders count:', error);
+        // Check if it's a CORS error
+        if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
+          console.warn('⚠️ CORS error: Backend needs to allow origin', window.location.origin);
+          console.warn('⚠️ Try using $.ajax instead of fetch for this endpoint');
+        }
         $("#totalOrders").text("0");
       }
     })();
 
     // Fetch Revenue from Transactions Summary
+    // Note: If this endpoint returns 404, it means the endpoint doesn't exist yet
+    // We'll handle it gracefully and set revenue to $0
     (async () => {
       try {
         const token = getAuthToken();
-        if (!token) return;
+        if (!token) {
+          console.warn('fetchDashboardData: No token for revenue');
+          $("#totalRevenue").text("$0");
+          return;
+        }
         
         const response = await fetch(`${API_BASE_URL}/merchant/transactions/store/${storeId}/summary?period=monthly`, {
           method: 'GET',
@@ -1457,14 +1498,26 @@ const MerchantApp = (() => {
         });
         
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          // Handle 404 gracefully - endpoint might not exist yet
+          if (response.status === 404) {
+            console.warn(`Revenue summary endpoint not found (404). Store ID: ${storeId}. This endpoint may not be implemented yet.`);
+            $("#totalRevenue").text("$0");
+            return;
+          } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
         }
         
         const data = await response.json();
-        const revenue = data.totalAmount || data.totalRevenue || 0;
+        const revenue = data.totalAmount || data.totalRevenue || data.revenue || 0;
         $("#totalRevenue").text("$" + parseFloat(revenue).toFixed(2));
       } catch (error) {
         console.error('Error fetching revenue:', error);
+        // Check if it's a CORS error
+        if (error.message && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'))) {
+          console.warn('⚠️ CORS error: Backend needs to allow origin', window.location.origin);
+        }
+        // Set revenue to $0 on any error
         $("#totalRevenue").text("$0");
       }
     })();
@@ -3770,10 +3823,21 @@ const MerchantApp = (() => {
       url = `${API_BASE_URL}/merchant/orders/filter?storeId=${storeId}&status=${statusFilter}&page=${page}&pageSize=${pageSize}`;
     }
     
+    const token = getAuthToken();
+    if (!token) {
+      console.error('fetchOrders: No authentication token found');
+      $("#ordersTableBody").html('<tr><td colspan="6" class="text-center text-danger">Authentication required</td></tr>');
+      return;
+    }
+    
     $.ajax({
       url: url,
       method: 'GET',
-      headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
       success: function(response) {
         // Handle both direct array and paged result
         const orders = response.data || response.items || response || [];
@@ -3783,12 +3847,36 @@ const MerchantApp = (() => {
         renderOrdersTable(orders);
         updateOrderPaginationInfo(page, totalPages, totalCount);
       },
-      error: function(xhr) {
-        console.error('Error fetching orders:', xhr);
+      error: function(xhr, status, error) {
+        console.error('Error fetching orders:', {
+          status: xhr.status,
+          statusText: xhr.statusText,
+          error: error,
+          responseText: xhr.responseText,
+          responseJSON: xhr.responseJSON
+        });
+        
         let errorMsg = 'Error loading orders';
-        if (xhr.responseJSON && xhr.responseJSON.message) {
+        
+        // Handle specific error cases
+        if (xhr.status === 0 || status === 'error') {
+          errorMsg = 'Network error. Please check your connection and CORS settings.';
+          console.warn('⚠️ CORS error: Backend needs to allow origin', window.location.origin);
+        } else if (xhr.status === 404) {
+          errorMsg = 'Orders endpoint not found. Please check the API configuration.';
+        } else if (xhr.status === 401) {
+          errorMsg = 'Authentication failed. Please login again.';
+        } else if (xhr.responseJSON && xhr.responseJSON.message) {
           errorMsg = xhr.responseJSON.message;
+        } else if (xhr.responseText) {
+          try {
+            const errorObj = JSON.parse(xhr.responseText);
+            errorMsg = errorObj.message || errorObj.error || errorMsg;
+          } catch (e) {
+            errorMsg = `Server error (${xhr.status}): ${xhr.statusText || error}`;
+          }
         }
+        
         $("#ordersTableBody").html(`<tr><td colspan="6" class="text-center text-danger">${errorMsg}</td></tr>`);
       }
     });
