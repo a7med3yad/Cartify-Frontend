@@ -5,14 +5,11 @@ const MerchantApp = (() => {
   const sectionLoaders = Object.freeze({
     Dashboard: loadDashboard,
     Customer: loadCustomer,
-    Order: loadOrder,
     Category: loadCategory,
     Subcategory: loadSubcategory,
-    Profile: loadProfile,
     Products: loadProductsList,
     Orders: loadOrders,
     Inventory: loadInventory,
-    Swapper: loadSwapper,
     AttributeMeasure: loadAttributeMeasure
   });
 
