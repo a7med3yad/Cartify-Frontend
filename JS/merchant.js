@@ -4824,6 +4824,7 @@ const MerchantApp = (() => {
   }
 
   // Helper function to look up attribute ID from name by trying IDs sequentially
+  // FIXED: Now stops after finding first valid ID to prevent hundreds of 404 errors
   function lookupAttributeIdByName(attributeName, callback) {
     if (!attributeName || attributeName.trim() === '') {
       callback(null);
@@ -4843,21 +4844,19 @@ const MerchantApp = (() => {
       return;
     }
 
-    // Try IDs sequentially starting from 1
+    // Try IDs sequentially starting from 1, but STOP after finding first valid ID
     let currentId = 1;
-    const maxAttempts = 500; // Reasonable limit
+    const maxAttempts = 100; // Reduced limit to prevent excessive 404s
     let attempts = 0;
-    const foundIds = []; // Track IDs that return success
+    let isStopped = false; // Flag to prevent multiple callbacks
     
     function tryNextId() {
-      if (attempts >= maxAttempts) {
-        console.warn('lookupAttributeIdByName: Max attempts reached, using first found ID or null');
-        // Use the first found ID if available, otherwise null
-        const foundId = foundIds.length > 0 ? foundIds[0] : null;
-        if (foundId) {
-          attributeNameToIdMap[attributeName] = foundId;
+      // Stop if we already found an ID or exceeded max attempts
+      if (isStopped || attempts >= maxAttempts) {
+        if (!isStopped) {
+          console.warn('lookupAttributeIdByName: Max attempts reached without finding valid ID');
+          callback(null);
         }
-        callback(foundId);
         return;
       }
       
@@ -4872,16 +4871,20 @@ const MerchantApp = (() => {
           'Content-Type': 'application/json'
         },
         success: function(response) {
-          // This ID exists, cache it and continue to find the right one
-          // Since we can't verify which attribute name this ID belongs to from the response,
-          // we'll cache all successful IDs and use the first one
-          if (foundIds.indexOf(currentId) === -1) {
-            foundIds.push(currentId);
+          // FIXED: Stop immediately after finding first valid ID
+          // Cache it and return - don't continue trying more IDs
+          if (!isStopped) {
+            isStopped = true;
+            attributeNameToIdMap[attributeName] = currentId;
+            console.log('lookupAttributeIdByName: Found attribute ID', currentId, 'for', attributeName);
+            callback(currentId);
           }
-          currentId++;
-          tryNextId();
         },
         error: function(xhr) {
+          if (isStopped) {
+            return; // Already found an ID, ignore this error
+          }
+          
           if (xhr.status === 404) {
             // Attribute not found, try next ID
             currentId++;
@@ -4892,19 +4895,14 @@ const MerchantApp = (() => {
               currentId++;
               tryNextId();
             } else {
-              // Other 400 error, might be valid ID with different issue
-              // Cache it and continue
-              if (foundIds.indexOf(currentId) === -1) {
-                foundIds.push(currentId);
-              }
-              currentId++;
-              tryNextId();
+              // Other 400 error - might be valid ID, use it
+              isStopped = true;
+              attributeNameToIdMap[attributeName] = currentId;
+              console.log('lookupAttributeIdByName: Using attribute ID', currentId, 'for', attributeName);
+              callback(currentId);
             }
           } else {
-            // Other error, cache this ID and continue
-            if (foundIds.indexOf(currentId) === -1) {
-              foundIds.push(currentId);
-            }
+            // Other error (401, 500, etc.) - don't use this ID, try next
             currentId++;
             tryNextId();
           }
@@ -4957,17 +4955,16 @@ const MerchantApp = (() => {
         // Clear the cache
         attributeNameToIdMap = {};
         
-        // Add attributes to dropdown and build ID mapping
-        // Since we don't have IDs from the API, we'll store the name and look up ID when needed
+        // Add attributes to dropdown
+        // Store attribute name in value - ID will be looked up and cached when selected
         attributes.forEach((attr, index) => {
           const attrName = typeof attr === 'string' ? attr : (attr.name || attr.Name || attr);
           const escapedAttr = String(attrName).replace(/"/g, '&quot;');
-          // Store attribute name with a temporary placeholder for ID lookup
-          // We'll use data attributes to store additional info if needed
-          $select.append(`<option value="${escapedAttr}" data-attr-index="${index}">${attrName}</option>`);
+          $select.append(`<option value="${escapedAttr}">${attrName}</option>`);
         });
         
         // Note: Attribute ID mapping will be built on-demand when attributes are selected
+        // This prevents hundreds of 404 errors from sequential lookups
         
         console.log('loadAttributesForSelect: Loaded', attributes.length, 'attributes into dropdown');
       },
