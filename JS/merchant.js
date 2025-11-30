@@ -6851,10 +6851,20 @@ const MerchantApp = (() => {
     const typeId = $('#productType').val();
     const storeId = getStoreId();
 
-    if (!productName || !typeId) {
-      showNotification('Please fill in all required fields', 'error');
+    // Detailed validation with specific error messages
+    if (!productName || productName.trim() === '') {
+      showNotification('Product name is required', 'error');
+      $('#productName').focus();
       return;
     }
+
+    if (!typeId || typeId === '') {
+      showNotification('Please select a subcategory/type', 'error');
+      $('#productType').focus();
+      return;
+    }
+
+    console.log('Saving product with:', { productName, typeId, storeId, productDescription });
 
     const formData = new FormData();
     formData.append('ProductName', productName);
@@ -6890,9 +6900,14 @@ const MerchantApp = (() => {
       },
       error: function (xhr) {
         console.error('Error saving product:', xhr);
+        console.error('Response:', xhr.responseJSON);
         let errorMsg = 'Error saving product';
         if (xhr.responseJSON?.message) {
           errorMsg = xhr.responseJSON.message;
+        } else if (xhr.responseJSON?.errors) {
+          errorMsg = Object.values(xhr.responseJSON.errors).flat().join(', ');
+        } else if (xhr.responseText) {
+          errorMsg = xhr.responseText;
         }
         showNotification(errorMsg, 'error');
       }
