@@ -1,39 +1,30 @@
 // profile.js
-const CartifyApi = window.CartifyApi || {};
-const API_BASE_URL = CartifyApi.baseUrl || 'https://cartify.runasp.net/api';
+// API Base URL
+const API_BASE_URL = 'https://cartify.runasp.net/api';
 
-const fallbackGetAuthToken = () => {
-    try {
-        const stored =
-            JSON.parse(localStorage.getItem('Auth') || 'null') ||
-            JSON.parse(sessionStorage.getItem('Auth') || 'null') ||
-            {};
-        return stored.jwt || null;
-    } catch (error) {
-        console.warn('Unable to read stored auth token', error);
-        return null;
-    }
-};
+// Helper function to get auth token
+function getAuthToken() {
+    const authData = JSON.parse(localStorage.getItem('Auth') || sessionStorage.getItem('Auth') || '{}');
+    return authData.jwt || null;
+}
 
-const fallbackGetUserId = () => {
-    const token = fallbackGetAuthToken();
+// Helper function to get userId from JWT token
+function getUserId() {
+    const token = getAuthToken();
     if (!token) return null;
-
+    
     try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const userId =
-            payload.sub || payload.nameid || payload.UserId || payload.userId;
-        return userId ? (typeof userId === 'string' ? parseInt(userId, 10) : userId) : null;
-    } catch (error) {
-        console.error('Error parsing JWT:', error);
+        const base64Payload = token.split('.')[1];
+        const payload = JSON.parse(atob(base64Payload));
+        // JWT token uses JwtRegisteredClaimNames.Sub which maps to "sub" claim
+        // Also check for numeric string conversion since user.Id is stored as string in token
+        const userId = payload.sub || payload.nameid || payload.UserId || payload.userId;
+        return userId ? (typeof userId === 'string' ? parseInt(userId) : userId) : null;
+    } catch (e) {
+        console.error('Error parsing JWT:', e);
         return null;
     }
-};
-
-const getAuthToken = () =>
-    (CartifyApi.getAuthToken && CartifyApi.getAuthToken()) || fallbackGetAuthToken();
-const getUserId = () =>
-    (CartifyApi.getUserId && CartifyApi.getUserId()) || fallbackGetUserId();
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     // Load user profile data
