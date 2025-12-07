@@ -9,22 +9,16 @@ const API_CONFIG = {
     createProduct: () => `/api/merchant/products`,
     updateProduct: (productId) => `/api/merchant/products/${productId}`,
     deleteProduct: (productId) => `/api/merchant/products/${productId}`,
-    productDetailsByProduct: (productId) =>
-      `/api/merchant/products/${productId}`,
-    productDetailById: (detailId) =>
-      `/api/merchant/products/details/${detailId}`,
+    productDetailsByProduct: (productId) => `/api/merchant/products/${productId}`,
+    productDetailById: (detailId) => `/api/merchant/products/details/${detailId}`,
     productDetails: () => `/api/merchant/products/details`,
-    deleteProductDetail: (detailId) =>
-      `/api/merchant/products/details/${detailId}`,
-    inventoryByDetail: (detailId) =>
-      `/api/merchant/inventory/product-detail/${detailId}`,
-    inventoryStock: (detailId) =>
-      `/api/merchant/inventory/product-detail/${detailId}/stock`,
+    deleteProductDetail: (detailId) => `/api/merchant/products/details/${detailId}`,
+    inventoryByDetail: (detailId) => `/api/merchant/inventory/product-detail/${detailId}`,
+    inventoryStock: (detailId) => `/api/merchant/inventory/product-detail/${detailId}/stock`,
     subcategories: () => `/api/Category/subcategory`,
     attributes: () => `/api/merchant/attributes-measures/attributes`,
     measures: () => `/api/merchant/attributes-measures/measures`,
-    uploadProductImages: (productId) =>
-      `/api/merchant/products/${productId}/images`,
+    uploadProductImages: (productId) => `/api/merchant/products/${productId}/images`,
   },
 };
 
@@ -51,7 +45,28 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function getAuthToken() {
-  return localStorage.getItem("authToken") || "";
+  const direct =
+    localStorage.getItem("authToken") ||
+    sessionStorage.getItem("authToken") ||
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("token");
+  if (direct) return direct.startsWith("Bearer ") ? direct.slice(7) : direct;
+
+  const authObj =
+    localStorage.getItem("Auth") ||
+    sessionStorage.getItem("Auth") ||
+    localStorage.getItem("auth") ||
+    sessionStorage.getItem("auth");
+  if (authObj) {
+    try {
+      const parsed = JSON.parse(authObj);
+      const tok = parsed.jwt || parsed.token || parsed.accessToken || "";
+      return tok.startsWith("Bearer ") ? tok.slice(7) : tok;
+    } catch (err) {
+      console.warn("Unable to parse Auth object", err);
+    }
+  }
+  return "";
 }
 
 async function apiRequest(path, options = {}) {
@@ -62,11 +77,7 @@ async function apiRequest(path, options = {}) {
   };
 
   const isFormData = options.body instanceof FormData;
-  if (
-    !isFormData &&
-    options.body !== undefined &&
-    !config.headers.has("Content-Type")
-  ) {
+  if (!isFormData && options.body !== undefined && !config.headers.has("Content-Type")) {
     config.headers.set("Content-Type", "application/json");
   }
 
@@ -101,8 +112,29 @@ function getMerchantContext() {
     storeId: localStorage.getItem("storeId") || null,
   };
 
+  const authObj =
+    localStorage.getItem("Auth") ||
+    sessionStorage.getItem("Auth") ||
+    localStorage.getItem("auth") ||
+    sessionStorage.getItem("auth");
+  if (authObj) {
+    try {
+      const parsed = JSON.parse(authObj);
+      context.merchantId =
+        context.merchantId ||
+        parsed.merchantId ||
+        parsed.MerchantId ||
+        parsed.userId ||
+        parsed.UserId ||
+        null;
+      context.storeId = context.storeId || parsed.storeId || parsed.StoreId || null;
+    } catch (err) {
+      console.warn("Unable to parse Auth object", err);
+    }
+  }
+
   const token = getAuthToken();
-  if (token) {
+  if (token && token.split(".").length === 3) {
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
       context.merchantId =
@@ -113,11 +145,7 @@ function getMerchantContext() {
         payload.nameid ||
         null;
       context.storeId =
-        context.storeId ||
-        payload.storeId ||
-        payload.StoreId ||
-        payload.storeID ||
-        null;
+        context.storeId || payload.storeId || payload.StoreId || payload.storeID || null;
     } catch (error) {
       console.warn("Unable to parse auth token", error);
     }
@@ -144,20 +172,16 @@ function bindSidebar() {
 
 function bindButtons() {
   const searchInput = document.getElementById("productSearchInput");
-  searchInput.addEventListener("input", (event) =>
-    handleSearch(event.target.value),
+  searchInput.addEventListener("input", (event) => handleSearch(event.target.value));
+
+  document.getElementById("openProductModalBtn").addEventListener("click", () =>
+    openProductModal(),
+  );
+  document.getElementById("productsEmptyPrimaryBtn").addEventListener("click", () =>
+    openProductModal(),
   );
 
-  document
-    .getElementById("openProductModalBtn")
-    .addEventListener("click", () => openProductModal());
-  document
-    .getElementById("productsEmptyPrimaryBtn")
-    .addEventListener("click", () => openProductModal());
-
-  document
-    .getElementById("refreshProductsBtn")
-    .addEventListener("click", () => loadProducts());
+  document.getElementById("refreshProductsBtn").addEventListener("click", () => loadProducts());
 
   document
     .getElementById("productsTableBody")
@@ -174,76 +198,58 @@ function bindButtons() {
     .getElementById("refreshProductDetailsBtn")
     .addEventListener("click", () => refreshSelectedProductDetails());
 
-  document
-    .getElementById("productDetailsEmptyBtn")
-    .addEventListener("click", () => openProductDetailModal());
+  document.getElementById("productDetailsEmptyBtn").addEventListener("click", () =>
+    openProductDetailModal(),
+  );
 
-  document
-    .getElementById("addProductDetailBtn")
-    .addEventListener("click", () => openProductDetailModal());
+  document.getElementById("addProductDetailBtn").addEventListener("click", () =>
+    openProductDetailModal(),
+  );
 
-  document
-    .getElementById("backToProductDetailsBtn")
-    .addEventListener("click", () => {
-      showSection("productDetailsSection");
-    });
+  document.getElementById("backToProductDetailsBtn").addEventListener("click", () => {
+    showSection("productDetailsSection");
+  });
 
-  document
-    .getElementById("refreshInventoryBtn")
-    .addEventListener("click", () => {
-      if (state.selectedDetail) {
-        loadInventory(state.selectedDetail);
-      }
-    });
+  document.getElementById("refreshInventoryBtn").addEventListener("click", () => {
+    if (state.selectedDetail) {
+      loadInventory(state.selectedDetail);
+    }
+  });
 
-  document
-    .getElementById("detailAttributesWrapper")
-    .addEventListener("click", (event) => {
-      if (event.target.classList.contains("attribute-remove")) {
-        event.preventDefault();
-        event.target.closest(".attribute-row")?.remove();
-      }
-    });
+  document.getElementById("detailAttributesWrapper").addEventListener("click", (event) => {
+    if (event.target.classList.contains("attribute-remove")) {
+      event.preventDefault();
+      event.target.closest(".attribute-row")?.remove();
+    }
+  });
 
-  document
-    .getElementById("addAttributeRowBtn")
-    .addEventListener("click", async () => {
-      await ensureAttributeCatalogs();
-      addAttributeRow();
-    });
+  document.getElementById("addAttributeRowBtn").addEventListener("click", async () => {
+    await ensureAttributeCatalogs();
+    addAttributeRow();
+  });
 
-  document
-    .getElementById("productImageUrlInput")
-    .addEventListener("input", (event) => {
-      const preview = document.getElementById("productImagePreview");
-      preview.src = event.target.value.trim() || PLACEHOLDER_IMAGE;
-    });
+  document.getElementById("productImageUrlInput").addEventListener("input", (event) => {
+    const preview = document.getElementById("productImagePreview");
+    preview.src = event.target.value.trim() || PLACEHOLDER_IMAGE;
+  });
 
-  document
-    .getElementById("productImageFileInput")
-    .addEventListener("change", (event) => {
-      const file = event.target.files?.[0];
-      const preview = document.getElementById("productImagePreview");
-      if (file) {
-        preview.src = URL.createObjectURL(file);
-      } else {
-        preview.src =
-          document.getElementById("productImageUrlInput").value.trim() ||
-          PLACEHOLDER_IMAGE;
-      }
-    });
+  document.getElementById("productImageFileInput").addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    const preview = document.getElementById("productImagePreview");
+    if (file) {
+      preview.src = URL.createObjectURL(file);
+    } else {
+      preview.src = document.getElementById("productImageUrlInput").value.trim() || PLACEHOLDER_IMAGE;
+    }
+  });
 }
 
 function bindForms() {
-  document
-    .getElementById("addProductForm")
-    .addEventListener("submit", handleProductSubmit);
+  document.getElementById("addProductForm").addEventListener("submit", handleProductSubmit);
   document
     .getElementById("addProductDetailForm")
     .addEventListener("submit", handleProductDetailSubmit);
-  document
-    .getElementById("addInventoryForm")
-    .addEventListener("submit", handleInventorySubmit);
+  document.getElementById("addInventoryForm").addEventListener("submit", handleInventorySubmit);
 
   document.querySelectorAll("[data-close-modal]").forEach((btn) => {
     btn.addEventListener("click", () => closeModal(btn.dataset.closeModal));
@@ -286,6 +292,8 @@ async function ensureSubcategories() {
     return;
   }
 
+  if (!getAuthToken()) return;
+
   try {
     const data = await apiRequest(API_CONFIG.endpoints.subcategories());
     const items = data?.data || data?.items || data;
@@ -293,18 +301,16 @@ async function ensureSubcategories() {
     populateTypeSelect();
   } catch (error) {
     console.warn("Unable to load subcategories", error);
-    showToast(
-      "Could not load product types. Try again after signing in.",
-      "error",
-    );
+    showToast("Could not load product types. Try again after signing in.", "error");
     const select = document.getElementById("productTypeSelect");
     if (select) {
-      select.innerHTML = '<option value=\"\">Sign in to load types</option>';
+      select.innerHTML = '<option value="">Sign in to load types</option>';
     }
   }
 }
 
 async function ensureAttributeCatalogs() {
+  if (!getAuthToken()) return;
   if (state.attributes.length && state.measures.length) return;
   try {
     const [attributes, measures] = await Promise.all([
@@ -314,15 +320,10 @@ async function ensureAttributeCatalogs() {
     state.attributes = Array.isArray(attributes?.data || attributes)
       ? attributes.data || attributes
       : [];
-    state.measures = Array.isArray(measures?.data || measures)
-      ? measures.data || measures
-      : [];
+    state.measures = Array.isArray(measures?.data || measures) ? measures.data || measures : [];
   } catch (error) {
     console.warn("Unable to load attribute/measure catalogs", error);
-    showToast(
-      "Attributes/measures could not be loaded. You can still type IDs manually.",
-      "error",
-    );
+    showToast("Attributes/measures could not be loaded. You can still type IDs manually.", "error");
   }
 }
 
@@ -338,39 +339,39 @@ function populateTypeSelect() {
     })
     .join("");
 
-  select.innerHTML = `<option value=\"\">Select type</option>${options}`;
+  select.innerHTML = `<option value="">Select type</option>${options}`;
 }
 
 async function loadProducts() {
   const tbody = document.getElementById("productsTableBody");
-  tbody.innerHTML = `<tr><td colspan=\"5\" class=\"empty-row\">Loading products…</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Loading products…</td></tr>`;
+
+  if (!getAuthToken()) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Log in to load products (token not found).</td></tr>`;
+    showToast("Login required to load products. Set authToken in storage.", "error");
+    return;
+  }
 
   const { merchantId } = getMerchantContext();
   if (!merchantId) {
-    tbody.innerHTML = `<tr><td colspan=\"5\" class=\"empty-row\">merchantId missing. Store it in localStorage before loading.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-row">merchantId missing. Store it in localStorage before loading.</td></tr>`;
     showToast("Set merchantId in localStorage to load catalog data.", "error");
     return;
   }
 
   try {
     const response = await apiRequest(
-      API_CONFIG.endpoints.products(
-        merchantId,
-        state.pagination.page,
-        state.pagination.size,
-      ),
+      API_CONFIG.endpoints.products(merchantId, state.pagination.page, state.pagination.size),
     );
-    const products =
-      response?.data || response?.items || response?.value || response || [];
+    const products = response?.data || response?.items || response?.value || response || [];
     state.products = Array.isArray(products) ? products : [];
     state.filteredProducts = [...state.products];
 
-    document.getElementById("productsCount").textContent =
-      state.products.length;
+    document.getElementById("productsCount").textContent = state.products.length;
     renderProducts(state.filteredProducts);
   } catch (error) {
     console.error(error);
-    tbody.innerHTML = `<tr><td colspan=\"5\" class=\"empty-row\">Unable to load products (${error.message}).</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Unable to load products (${error.message}).</td></tr>`;
     showToast("Failed to load products.", "error");
   }
 }
@@ -391,33 +392,29 @@ function renderProducts(products) {
     .map((product) => {
       const id = getProductId(product);
       const name = product.productName || product.name || `Product #${id}`;
-      const description =
-        product.productDescription || product.description || "—";
+      const description = product.productDescription || product.description || "—";
       const variants =
         product.productDetails?.length ||
         product.ProductDetails?.length ||
         product.details?.length ||
         0;
-      const created =
-        product.createdDate || product.CreatedAt || product.createdAt;
-      const createdLabel = created
-        ? new Date(created).toLocaleDateString()
-        : "—";
+      const created = product.createdDate || product.CreatedAt || product.createdAt;
+      const createdLabel = created ? new Date(created).toLocaleDateString() : "—";
 
       return `
         <tr>
           <td>
             <strong>${escapeHtml(name)}</strong>
-            <div class=\"muted\">ID: ${id}</div>
+            <div class="muted">ID: ${id}</div>
           </td>
           <td>${escapeHtml(description)}</td>
           <td>${variants}</td>
           <td>${createdLabel}</td>
           <td>
-            <div class=\"action-group\">
-              <button class=\"btn ghost\" data-action=\"details\" data-id=\"${id}\">Details</button>
-              <button class=\"btn\" data-action=\"edit\" data-id=\"${id}\">Edit</button>
-              <button class=\"btn danger\" data-action=\"delete\" data-id=\"${id}\">Delete</button>
+            <div class="action-group">
+              <button class="btn ghost" data-action="details" data-id="${id}">Details</button>
+              <button class="btn" data-action="edit" data-id="${id}">Edit</button>
+              <button class="btn danger" data-action="delete" data-id="${id}">Delete</button>
             </div>
           </td>
         </tr>
@@ -438,8 +435,7 @@ function handleSearch(term) {
       return name.includes(normalized);
     });
   }
-  document.getElementById("productsCount").textContent =
-    state.filteredProducts.length;
+  document.getElementById("productsCount").textContent = state.filteredProducts.length;
   renderProducts(state.filteredProducts);
 }
 
@@ -461,8 +457,7 @@ function handleProductsTableAction(event) {
 }
 
 function showProductDetails(productId) {
-  const product =
-    state.products.find((item) => getProductId(item) === productId) || null;
+  const product = state.products.find((item) => getProductId(item) === productId) || null;
   if (product) {
     state.selectedProduct = product;
   } else {
@@ -476,31 +471,21 @@ function showProductDetails(productId) {
 
 function hydrateProductHeader(product) {
   const name =
-    product.productName ||
-    product.name ||
-    product.title ||
-    `Product #${getProductId(product)}`;
+    product.productName || product.name || product.title || `Product #${getProductId(product)}`;
   document.getElementById("selectedProductTitle").textContent = name;
   document.getElementById("selectedProductDescription").textContent =
     product.productDescription || product.description || "";
-  document.getElementById("selectedProductId").textContent =
-    getProductId(product);
-  const image =
-    product.imageUrl ||
-    product.ImageUrl ||
-    product.productImageUrl ||
-    PLACEHOLDER_IMAGE;
+  document.getElementById("selectedProductId").textContent = getProductId(product);
+  const image = product.imageUrl || product.ImageUrl || product.productImageUrl || PLACEHOLDER_IMAGE;
   document.getElementById("selectedProductImage").src = image;
 }
 
 async function loadProductDetails(productId) {
   const tbody = document.getElementById("productDetailsTableBody");
-  tbody.innerHTML = `<tr><td colspan=\"5\" class=\"empty-row\">Loading variants…</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Loading variants…</td></tr>`;
 
   try {
-    const response = await apiRequest(
-      API_CONFIG.endpoints.productDetailsByProduct(productId),
-    );
+    const response = await apiRequest(API_CONFIG.endpoints.productDetailsByProduct(productId));
     state.selectedProduct = response || state.selectedProduct;
     hydrateProductHeader(state.selectedProduct);
 
@@ -515,7 +500,7 @@ async function loadProductDetails(productId) {
     renderProductDetails(state.selectedProductDetails);
   } catch (error) {
     console.error(error);
-    tbody.innerHTML = `<tr><td colspan=\"5\" class=\"empty-row\">Unable to load variants (${error.message}).</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Unable to load variants (${error.message}).</td></tr>`;
     showToast("Failed to load product variants.", "error");
   }
 }
@@ -535,14 +520,10 @@ function renderProductDetails(details) {
   tbody.innerHTML = details
     .map((detail) => {
       const id = getProductDetailId(detail);
-      const serial =
-        detail.serialNumber || detail.SerialNumber || `Variant #${id}`;
+      const serial = detail.serialNumber || detail.SerialNumber || `Variant #${id}`;
       const price = detail.price ?? detail.Price;
       const qty =
-        detail.quantityAvailable ||
-        detail.QuantityAvailable ||
-        detail.quantity ||
-        detail.Quantity;
+        detail.quantityAvailable || detail.QuantityAvailable || detail.quantity || detail.Quantity;
       const description = detail.description || detail.Description || "—";
       return `
         <tr>
@@ -551,10 +532,10 @@ function renderProductDetails(details) {
           <td>${qty ?? "—"}</td>
           <td>${escapeHtml(description)}</td>
           <td>
-            <div class=\"action-group\">
-              <button class=\"btn ghost\" data-detail-action=\"inventory\" data-id=\"${id}\">Inventory</button>
-              <button class=\"btn\" data-detail-action=\"edit\" data-id=\"${id}\">Edit</button>
-              <button class=\"btn danger\" data-detail-action=\"delete\" data-id=\"${id}\">Delete</button>
+            <div class="action-group">
+              <button class="btn ghost" data-detail-action="inventory" data-id="${id}">Inventory</button>
+              <button class="btn" data-detail-action="edit" data-id="${id}">Edit</button>
+              <button class="btn danger" data-detail-action="delete" data-id="${id}">Delete</button>
             </div>
           </td>
         </tr>
@@ -572,9 +553,7 @@ function handleDetailsTableAction(event) {
 
   if (btn.dataset.detailAction === "inventory") {
     const detail =
-      state.selectedProductDetails.find(
-        (item) => getProductDetailId(item) === detailId,
-      ) || null;
+      state.selectedProductDetails.find((item) => getProductDetailId(item) === detailId) || null;
     showInventory(detailId, detail);
   } else if (btn.dataset.detailAction === "edit") {
     editProductDetail(detailId);
@@ -584,9 +563,7 @@ function handleDetailsTableAction(event) {
 }
 
 function getProductId(product) {
-  return Number(
-    product?.productId || product?.id || product?.ProductId || product?.ID || 0,
-  );
+  return Number(product?.productId || product?.id || product?.ProductId || product?.ID || 0);
 }
 
 function getProductDetailId(detail) {
@@ -608,8 +585,7 @@ function openProductModal(product = null) {
   if (product) {
     document.getElementById("productModalTitle").textContent = "Edit product";
     document.getElementById("productIdField").value = getProductId(product);
-    document.getElementById("productNameInput").value =
-      product.productName || product.name || "";
+    document.getElementById("productNameInput").value = product.productName || product.name || "";
     document.getElementById("productDescriptionInput").value =
       product.productDescription || product.description || "";
     document.getElementById("productImageUrlInput").value =
@@ -619,10 +595,7 @@ function openProductModal(product = null) {
     document.getElementById("productStoreInput").value =
       getMerchantContext().storeId || product.storeId || product.StoreId || 1;
     const typeId =
-      product.typeId ||
-      product.TypeId ||
-      product.subCategoryId ||
-      product.SubCategoryId;
+      product.typeId || product.TypeId || product.subCategoryId || product.SubCategoryId;
     if (typeId) {
       ensureSubcategories().then(() => {
         document.getElementById("productTypeSelect").value = typeId;
@@ -631,8 +604,7 @@ function openProductModal(product = null) {
   } else {
     document.getElementById("productModalTitle").textContent = "Add product";
     document.getElementById("productImagePreview").src = PLACEHOLDER_IMAGE;
-    document.getElementById("productStoreInput").value =
-      getMerchantContext().storeId || "";
+    document.getElementById("productStoreInput").value = getMerchantContext().storeId || "";
     document.getElementById("productIdField").value = "";
   }
 
@@ -646,13 +618,16 @@ function closeModal(modalId) {
 
 async function handleProductSubmit(event) {
   event.preventDefault();
+  if (!getAuthToken()) {
+    showToast("Login required. Token not found.", "error");
+    return;
+  }
+
   const isEdit = Boolean(document.getElementById("productIdField").value);
   const productId = document.getElementById("productIdField").value;
 
   const productName = document.getElementById("productNameInput").value.trim();
-  const description = document
-    .getElementById("productDescriptionInput")
-    .value.trim();
+  const description = document.getElementById("productDescriptionInput").value.trim();
   const typeId = document.getElementById("productTypeSelect").value;
   const storeId = document.getElementById("productStoreInput").value;
   const imageUrl = document.getElementById("productImageUrlInput").value.trim();
@@ -716,27 +691,18 @@ async function uploadProductImages(productId, files) {
     showToast("Image uploaded to S3.", "success");
   } catch (error) {
     console.error("Image upload failed", error);
-    showToast(
-      `Product created but image upload failed (${error.message}).`,
-      "error",
-    );
+    showToast(`Product created but image upload failed (${error.message}).`, "error");
   }
 }
 
 function attributeOptionsHtml() {
   if (!state.attributes.length) {
-    return '<option value=\"\">Enter attribute ID manually</option>';
+    return '<option value="">Enter attribute ID manually</option>';
   }
   return state.attributes
     .map((attr, index) => {
-      const id =
-        attr.attributeId ||
-        attr.id ||
-        attr.attributeID ||
-        attr.value ||
-        index + 1;
-      const label =
-        attr.name || attr.attributeName || attr || `Attribute ${id}`;
+      const id = attr.attributeId || attr.id || attr.attributeID || attr.value || index + 1;
+      const label = attr.name || attr.attributeName || attr || `Attribute ${id}`;
       return `<option value="${id}">${escapeHtml(label)}</option>`;
     })
     .join("");
@@ -744,18 +710,12 @@ function attributeOptionsHtml() {
 
 function measureOptionsHtml() {
   if (!state.measures.length) {
-    return '<option value=\"\">Enter measure unit ID manually</option>';
+    return '<option value="">Enter measure unit ID manually</option>';
   }
   return state.measures
     .map((measure, index) => {
-      const id =
-        measure.measureUnitId ||
-        measure.id ||
-        measure.measureId ||
-        measure.value ||
-        index + 1;
-      const label =
-        measure.name || measure.measureName || measure || `Measure ${id}`;
+      const id = measure.measureUnitId || measure.id || measure.measureId || measure.value || index + 1;
+      const label = measure.name || measure.measureName || measure || `Measure ${id}`;
       return `<option value="${id}">${escapeHtml(label)}</option>`;
     })
     .join("");
@@ -778,10 +738,8 @@ function addAttributeRow(values = {}) {
   `;
   wrapper.appendChild(row);
 
-  if (values.attributeId)
-    row.querySelector(".attribute-select").value = values.attributeId;
-  if (values.measureUnitId)
-    row.querySelector(".measure-select").value = values.measureUnitId;
+  if (values.attributeId) row.querySelector(".attribute-select").value = values.attributeId;
+  if (values.measureUnitId) row.querySelector(".measure-select").value = values.measureUnitId;
 }
 
 function openProductDetailModal(detail = null) {
@@ -800,12 +758,10 @@ function openProductDetailModal(detail = null) {
 
     if (detail) {
       document.getElementById("detailModalTitle").textContent = "Edit variant";
-      document.getElementById("productDetailIdField").value =
-        getProductDetailId(detail);
+      document.getElementById("productDetailIdField").value = getProductDetailId(detail);
       document.getElementById("detailSerialInput").value =
         detail.serialNumber || detail.SerialNumber || "";
-      document.getElementById("detailPriceInput").value =
-        detail.price || detail.Price || "";
+      document.getElementById("detailPriceInput").value = detail.price || detail.Price || "";
       document.getElementById("detailQuantityInput").value =
         detail.quantityAvailable || detail.QuantityAvailable || "";
       document.getElementById("detailDescriptionInput").value =
@@ -830,9 +786,7 @@ function openProductDetailModal(detail = null) {
 
 async function editProductDetail(detailId) {
   try {
-    const detail = await apiRequest(
-      API_CONFIG.endpoints.productDetailById(detailId),
-    );
+    const detail = await apiRequest(API_CONFIG.endpoints.productDetailById(detailId));
     openProductDetailModal(detail);
   } catch (error) {
     console.error(error);
@@ -849,17 +803,10 @@ async function handleProductDetailSubmit(event) {
 
   const productId = getProductId(state.selectedProduct);
   const detailId = document.getElementById("productDetailIdField").value;
-  const serialNumber = document
-    .getElementById("detailSerialInput")
-    .value.trim();
+  const serialNumber = document.getElementById("detailSerialInput").value.trim();
   const price = parseFloat(document.getElementById("detailPriceInput").value);
-  const qty = parseInt(
-    document.getElementById("detailQuantityInput").value,
-    10,
-  );
-  const description = document
-    .getElementById("detailDescriptionInput")
-    .value.trim();
+  const qty = parseInt(document.getElementById("detailQuantityInput").value, 10);
+  const description = document.getElementById("detailDescriptionInput").value.trim();
 
   if (!serialNumber || Number.isNaN(price) || Number.isNaN(qty)) {
     showToast("Serial number, price, and quantity are required.", "error");
@@ -907,9 +854,7 @@ async function handleProductDetailSubmit(event) {
 async function deleteProduct(productId) {
   if (!confirm("Delete this product? This cannot be undone.")) return;
   try {
-    await apiRequest(API_CONFIG.endpoints.deleteProduct(productId), {
-      method: "DELETE",
-    });
+    await apiRequest(API_CONFIG.endpoints.deleteProduct(productId), { method: "DELETE" });
     showToast("Product deleted.", "success");
     loadProducts();
   } catch (error) {
@@ -921,9 +866,7 @@ async function deleteProduct(productId) {
 async function deleteProductDetail(detailId) {
   if (!confirm("Delete this product variant?")) return;
   try {
-    await apiRequest(API_CONFIG.endpoints.deleteProductDetail(detailId), {
-      method: "DELETE",
-    });
+    await apiRequest(API_CONFIG.endpoints.deleteProductDetail(detailId), { method: "DELETE" });
     showToast("Variant deleted.", "success");
     refreshSelectedProductDetails();
   } catch (error) {
@@ -941,8 +884,7 @@ function showInventory(detailId, detail) {
   state.selectedDetail = detail || { productDetailId: detailId };
   showSection("inventorySection");
 
-  const variantName =
-    detail?.serialNumber || detail?.SerialNumber || `Variant #${detailId}`;
+  const variantName = detail?.serialNumber || detail?.SerialNumber || `Variant #${detailId}`;
   document.getElementById("inventoryHeaderName").textContent = variantName;
   loadInventory(state.selectedDetail);
 }
@@ -950,12 +892,10 @@ function showInventory(detailId, detail) {
 async function loadInventory(detail) {
   const detailId = getProductDetailId(detail);
   const tbody = document.getElementById("inventoryTableBody");
-  tbody.innerHTML = `<tr><td colspan=\"5\" class=\"empty-row\">Loading inventory…</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Loading inventory…</td></tr>`;
 
   try {
-    const data = await apiRequest(
-      API_CONFIG.endpoints.inventoryByDetail(detailId),
-    );
+    const data = await apiRequest(API_CONFIG.endpoints.inventoryByDetail(detailId));
     state.inventoryRecord = data;
     renderInventory(data);
   } catch (error) {
@@ -964,7 +904,7 @@ async function loadInventory(detail) {
       renderInventory([]);
       return;
     }
-    tbody.innerHTML = `<tr><td colspan=\"5\" class=\"empty-row\">Unable to load inventory (${error.message}).</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Unable to load inventory (${error.message}).</td></tr>`;
     showToast("Failed to load inventory.", "error");
   }
 }
@@ -976,10 +916,10 @@ function renderInventory(inventory) {
   const list = Array.isArray(inventory)
     ? inventory
     : inventory?.items
-      ? inventory.items
-      : inventory
-        ? [inventory]
-        : [];
+    ? inventory.items
+    : inventory
+    ? [inventory]
+    : [];
 
   if (!list.length) {
     tbody.innerHTML = "";
@@ -1023,8 +963,7 @@ function updateInventorySummary(data) {
   }
   const total = Number(data.available || 0) + Number(data.reserved || 0);
   document.getElementById("inventoryTotal").textContent = total;
-  document.getElementById("inventoryAvailable").textContent =
-    data.available || 0;
+  document.getElementById("inventoryAvailable").textContent = data.available || 0;
   document.getElementById("inventoryReserved").textContent = data.reserved || 0;
 }
 
@@ -1035,10 +974,7 @@ async function handleInventorySubmit(event) {
     return;
   }
 
-  const newQuantity = parseInt(
-    document.getElementById("inventoryQuantityInput").value,
-    10,
-  );
+  const newQuantity = parseInt(document.getElementById("inventoryQuantityInput").value, 10);
   if (Number.isNaN(newQuantity) || newQuantity < 0) {
     showToast("Enter a valid quantity.", "error");
     return;
@@ -1081,10 +1017,7 @@ function escapeHtml(value) {
 function formatCurrency(amount) {
   const value = Number(amount);
   if (Number.isNaN(value)) return amount;
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-  }).format(value);
+  return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(value);
 }
 
 window.MerchantProducts = {
