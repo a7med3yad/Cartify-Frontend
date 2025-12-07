@@ -738,7 +738,6 @@ async function handleProductSubmit(event) {
     .value.trim();
   const typeId = document.getElementById("productTypeSelect").value;
   const storeId = document.getElementById("productStoreInput").value;
-  const imageUrl = document.getElementById("productImageUrlInput").value.trim();
   const imageFile = document.getElementById("productImageFileInput").files?.[0];
 
   const parsedTypeId = parseInt(typeId, 10);
@@ -765,7 +764,6 @@ async function handleProductSubmit(event) {
   formData.append("TypeId", parsedTypeId.toString());
   formData.append("StoreId", parsedStoreId.toString());
   if (description) formData.append("ProductDescription", description);
-  if (imageUrl) formData.append("ImageUrl", imageUrl);
 
   try {
     let createdProductId = productId;
@@ -813,6 +811,9 @@ async function handleProductSubmit(event) {
       } catch {
         msg = error.message || msg;
       }
+      msg = `Bad Request: ${msg}. Ensure ProductName, TypeId (subcategory), and StoreId are valid numbers for your account.`;
+    } else {
+      msg = `${msg} (HTTP ${error.status || "unknown"})`;
     }
     showToast(msg, "error");
   }
