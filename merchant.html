@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cartify Merchant Dashboard</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script type="module" src="assets/app-merchant.js" defer></script>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="container nav">
+      <a class="brand" href="index.html">
+        <span class="status-dot success"></span>
+        Cartify Merchant
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Storefront</a>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="merchant-logout">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="container">
+    <div class="layout">
+      <aside class="sidebar">
+        <h3>Navigate</h3>
+        <button class="active" data-section-link="overview">Overview</button>
+        <button data-section-link="products">Products</button>
+        <button data-section-link="details">Product details</button>
+        <button data-section-link="inventory">Inventory</button>
+        <button data-section-link="orders">Orders</button>
+        <button data-section-link="settings">Settings</button>
+      </aside>
+
+      <div class="stack">
+        <section class="panel merchant-section" data-section="overview">
+          <div class="section-header">
+            <div class="section-title">Profile</div>
+            <span class="pill" id="merchant-role-pill">Role: --</span>
+          </div>
+          <div class="grid grid-2">
+            <div class="card">
+              <div class="title">Account</div>
+              <div class="meta" id="merchant-email">--</div>
+              <div class="meta" id="merchant-roles">--</div>
+            </div>
+            <div class="card">
+              <div class="field">
+                <label for="merchant-store">Store ID (persisted locally)</label>
+                <input id="merchant-store" type="number" min="1" placeholder="e.g. 1">
+              </div>
+              <div class="controls">
+                <button class="btn btn-primary" id="save-store">Save store</button>
+                <button class="btn btn-ghost" id="go-products">Manage products</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel merchant-section" data-section="products" hidden>
+          <div class="section-header">
+            <div class="section-title">Products</div>
+            <button class="btn btn-ghost" id="reload-products">Reload</button>
+          </div>
+          <form id="product-form" class="stack">
+            <div class="field">
+              <label for="prod-name">Name</label>
+              <input id="prod-name" name="ProductName" required>
+            </div>
+            <div class="field">
+              <label for="prod-description">Description</label>
+              <textarea id="prod-description" name="ProductDescription"></textarea>
+            </div>
+            <div class="input-row">
+              <div class="field">
+                <label for="prod-type">Type ID (subCategory/type)</label>
+                <input id="prod-type" name="TypeId" type="number" min="1" required>
+              </div>
+              <div class="field">
+                <label for="prod-store">Store ID</label>
+                <input id="prod-store" name="StoreId" type="number" min="1" required>
+              </div>
+            </div>
+            <button class="btn btn-primary" type="submit">Create product</button>
+          </form>
+          <div class="stack" id="product-list"></div>
+          <div class="empty" id="product-empty" hidden>No products yet.</div>
+        </section>
+
+        <section class="panel merchant-section" data-section="details" hidden>
+          <div class="section-header">
+            <div class="section-title">Product details / variants</div>
+            <span class="pill">Attributes + stock</span>
+          </div>
+          <form id="detail-form" class="stack">
+            <div class="input-row">
+              <div class="field">
+                <label for="detail-product">Product ID</label>
+                <input id="detail-product" name="productId" type="number" min="1" required>
+              </div>
+              <div class="field">
+                <label for="detail-serial">Serial number</label>
+                <input id="detail-serial" name="serialNumber" required>
+              </div>
+            </div>
+            <div class="input-row">
+              <div class="field">
+                <label for="detail-price">Price</label>
+                <input id="detail-price" name="price" type="number" min="0" step="0.01" required>
+              </div>
+              <div class="field">
+                <label for="detail-qty">Quantity available</label>
+                <input id="detail-qty" name="quantityAvailable" type="number" min="0" required>
+              </div>
+            </div>
+            <div class="field">
+              <label for="detail-description">Description</label>
+              <textarea id="detail-description" name="description"></textarea>
+            </div>
+            <div class="stack" id="detail-attributes">
+              <div class="section-header">
+                <div>Attributes</div>
+                <button class="btn btn-ghost" type="button" id="add-attribute-row">Add attribute</button>
+              </div>
+            </div>
+            <button class="btn btn-primary" type="submit">Create detail</button>
+          </form>
+
+          <div class="section-header" style="margin-top:16px;">
+            <div class="section-title">Update detail</div>
+            <span class="pill">Send only fields you need to change</span>
+          </div>
+          <form id="detail-update-form" class="stack">
+            <div class="field">
+              <label for="update-detail-id">Detail ID</label>
+              <input id="update-detail-id" name="productDetailId" type="number" min="1" required>
+            </div>
+            <div class="input-row">
+              <div class="field">
+                <label for="update-price">Price</label>
+                <input id="update-price" name="price" type="number" step="0.01">
+              </div>
+              <div class="field">
+                <label for="update-qty">Quantity</label>
+                <input id="update-qty" name="quantityAvailable" type="number" min="0">
+              </div>
+            </div>
+            <div class="field">
+              <label for="update-desc">Description</label>
+              <textarea id="update-desc" name="description"></textarea>
+            </div>
+            <button class="btn btn-primary" type="submit">Update detail</button>
+          </form>
+        </section>
+
+        <section class="panel merchant-section" data-section="inventory" hidden>
+          <div class="section-header">
+            <div class="section-title">Inventory</div>
+            <button class="btn btn-ghost" id="reload-inventory">Refresh</button>
+          </div>
+          <form id="inventory-detail-form" class="stack">
+            <div class="field">
+              <label for="inventory-detail-id">Product detail ID</label>
+              <input id="inventory-detail-id" type="number" min="1" required>
+            </div>
+            <button class="btn btn-primary" type="submit">Load inventory</button>
+          </form>
+          <div class="stack" id="inventory-list"></div>
+          <div class="empty" id="inventory-empty" hidden>No inventory found.</div>
+
+          <div class="section-header" style="margin-top:18px;">
+            <div class="section-title">Update stock</div>
+          </div>
+          <form id="stock-form" class="input-row">
+            <div class="field">
+              <label for="stock-detail-id">Detail ID</label>
+              <input id="stock-detail-id" type="number" min="1" required>
+            </div>
+            <div class="field">
+              <label for="stock-qty">New quantity</label>
+              <input id="stock-qty" type="number" min="0" required>
+            </div>
+            <button class="btn btn-primary" type="submit">Update</button>
+          </form>
+
+          <div class="section-header" style="margin-top:18px;">
+            <div class="section-title">Store inventory</div>
+          </div>
+          <form id="inventory-store-form" class="input-row">
+            <div class="field">
+              <label for="inventory-store-id">Store ID</label>
+              <input id="inventory-store-id" type="number" min="1" required>
+            </div>
+            <div class="field">
+              <label for="inventory-store-page">Page</label>
+              <input id="inventory-store-page" type="number" min="1" value="1">
+            </div>
+            <div class="field">
+              <label for="inventory-store-size">Page size</label>
+              <input id="inventory-store-size" type="number" min="1" value="10">
+            </div>
+            <button class="btn btn-primary" type="submit">Load</button>
+          </form>
+          <div class="stack" id="inventory-store-list"></div>
+        </section>
+
+        <section class="panel merchant-section" data-section="orders" hidden>
+          <div class="section-header">
+            <div class="section-title">Orders</div>
+            <button class="btn btn-ghost" id="reload-merchant-orders">Reload</button>
+          </div>
+          <form id="orders-store-form" class="input-row">
+            <div class="field">
+              <label for="orders-store-id">Store ID</label>
+              <input id="orders-store-id" type="number" min="1" required>
+            </div>
+            <div class="field">
+              <label for="orders-page">Page</label>
+              <input id="orders-page" type="number" min="1" value="1">
+            </div>
+            <div class="field">
+              <label for="orders-size">Page size</label>
+              <input id="orders-size" type="number" min="1" value="10">
+            </div>
+            <button class="btn btn-primary" type="submit">Load orders</button>
+          </form>
+          <div class="stack" id="merchant-orders"></div>
+          <div class="empty" id="merchant-orders-empty" hidden>No orders yet.</div>
+
+          <div class="section-header" style="margin-top:18px;">
+            <div class="section-title">Update order status</div>
+          </div>
+          <form id="order-status-form" class="input-row">
+            <div class="field">
+              <label for="order-status-id">Order ID</label>
+              <input id="order-status-id" required>
+            </div>
+            <div class="field">
+              <label for="order-status-value">Status</label>
+              <input id="order-status-value" placeholder="Pending / Shipped / Delivered" required>
+            </div>
+            <button class="btn btn-primary" type="submit">Update</button>
+          </form>
+        </section>
+
+        <section class="panel merchant-section" data-section="settings" hidden>
+          <div class="section-header">
+            <div class="section-title">Merchant profile</div>
+            <span class="pill">Requires user token</span>
+          </div>
+          <form id="merchant-profile-form" class="stack">
+            <div class="field">
+              <label for="merchant-store-name">Store name</label>
+              <input id="merchant-store-name" required minlength="3">
+            </div>
+            <button class="btn btn-primary" type="submit">Create / refresh merchant profile</button>
+          </form>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toast-container"></div>
+</body>
+
+</html>
