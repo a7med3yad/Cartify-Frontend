@@ -1,303 +1,438 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cartify Merchant Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="Icons/favicon.ico" type="image/x-icon">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="bootstrap-5.3.8-dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.min.css">
+
+    <!-- Bootstrap FileInput CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/kartik-v/bootstrap-fileinput@5.5.0/css/fileinput.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/4.5.6/css/ionicons.min.css">
+    <link rel="stylesheet" href="CSS/dropdown.css">
+    <link rel="stylesheet" href="CSS/header.css">
+    <link rel="stylesheet" href="CSS/merchhome.css">
+    <link rel="stylesheet" href="CSS/style.css">
+    <link rel="stylesheet" href="CSS/buttons.css">
+
+    <!-- JS Libraries -->
+    <title>Home</title>
 </head>
+
 <body>
-  <div class="dashboard-layout">
-    <aside class="sidebar">
-      <div class="sidebar__brand">
-        <span class="brand-mark">Cartify</span>
-        <small class="brand-subtitle">Merchant</small>
-      </div>
-      <nav class="sidebar__nav">
-        <button class="nav-link" data-target="dashboard">Dashboard</button>
-        <button class="nav-link active" data-target="products">Products</button>
-        <button class="nav-link" data-target="orders">Orders</button>
-        <button class="nav-link" data-target="inventory">Inventory</button>
-        <button class="nav-link" data-target="settings">Settings</button>
-      </nav>
-      <div class="sidebar__footer">
-        <p class="sidebar__user-label">Signed in as</p>
-        <p class="sidebar__user" id="sidebarCurrentUser">merchant@cartify.dev</p>
-      </div>
-    </aside>
+    <!-- ================= HEADER ================= -->
+<!-- ================= PROFESSIONAL HEADER ================= -->
+<header class="header">
+  <!-- Logo Section -->
+  <div class="PageIcon">
+    <a href="#">
+      <img src="Icons/Untitled-ن2.png" alt="Cartify Logo">
+    </a>
+  </div>
 
-    <div class="workspace">
-      <header class="workspace__header">
-        <div>
-          <p class="subtitle">Multi-vendor Console</p>
-          <h1>Merchant Home</h1>
-        </div>
-        <div class="workspace__actions">
-          <button class="btn ghost" id="refreshProductsBtn">Refresh</button>
-          <button class="btn primary" id="openProductModalBtn">Add Product</button>
-        </div>
-      </header>
+  <!-- Center - Current Role Display (Optional) -->
+  <div class="current-role-display">
+    <i class="bi bi-person-badge"></i>
+    <span id="currentRoleText">Merchant</span>
+  </div>
 
-      <main class="view-panel">
-        <!-- PRODUCTS -->
-        <section id="productsSection" class="content-section active">
-          <div class="section-heading">
+  <!-- Right Side - User Menu -->
+  <div class="Login">
+    <div class="btn-group" id="drop">
+      <!-- User Avatar -->
+      <a href="#" 
+         class="btn-img dropdown-toggle" 
+         data-bs-toggle="dropdown"
+         aria-expanded="false" 
+         aria-label="User menu" 
+         title="User menu"
+         style="background-image: url('images/user.png');">
+      </a>
+
+      <!-- Dropdown Menu -->
+      <div class="dropdown-menu dropdown-menu-end">
+        
+        <!-- User Info Header -->
+        <div class="px-3 py-2 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-person-circle text-success" style="font-size: 1.25rem;"></i>
             <div>
-              <p class="subtitle">Catalog</p>
-              <h2>Products</h2>
+              <div class="fw-bold" style="font-size: 0.95rem;">Ahmed Ayad</div>
+              <div class="text-muted" style="font-size: 0.75rem;">ahmed@example.com</div>
             </div>
-            <div class="section-heading__actions">
-              <div class="input-group">
-                <input type="search" id="productSearchInput" placeholder="Search products by name">
+          </div>
+        </div>
+
+        <!-- Current Role Display -->
+        <div class="dropdown-item disabled d-flex align-items-center justify-content-between">
+          <span class="text-muted" style="font-size: 0.85rem;">Current Role:</span>
+          <span class="role-badge merchant" id="currentRoleBadge">Merchant</span>
+        </div>
+
+        <div class="dropdown-divider"></div>
+
+        <!-- Switch Role -->
+        <a class="dropdown-item role-switch" id="switchRole" href="#">
+          <div class="icon">
+            <i class="bi bi-arrow-left-right"></i>
+          </div>
+          <span>Switch Role</span>
+        </a>
+
+        <!-- Profile -->
+        <a class="dropdown-item" href="#" data-target="Profile">
+          <div class="icon">
+            <i class="bi bi-person"></i>
+          </div>
+          <span>My Profile</span>
+        </a>
+
+        <!-- Settings -->
+        <a class="dropdown-item" href="#">
+          <div class="icon">
+            <i class="bi bi-gear"></i>
+          </div>
+          <span>Settings</span>
+        </a>
+        
+
+        <div class="dropdown-divider"></div>
+
+        <!-- Logout -->
+        <a class="dropdown-item text-danger" id="logout1" href="#">
+          <div class="icon text-danger">
+            <i class="bi bi-box-arrow-right"></i>
+          </div>
+          <span>Log Out</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= ROLE SWITCH MODAL ================= -->
+<div class="modal fade" id="roleSwitchModal" tabindex="-1" aria-labelledby="roleSwitchModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="roleSwitchModalLabel">
+          <i class="bi bi-arrow-left-right me-2"></i>Switch Your Role
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body">
+        <p class="text-muted mb-4">Select the role you want to switch to:</p>
+        
+        <!-- Role Options -->
+        <div class="list-group">
+          
+          <!-- Merchant Role -->
+          <a href="#" class="list-group-item list-group-item-action role-option" data-role="merchant">
+            <div class="d-flex align-items-center">
+              <div class="icon me-3" style="font-size: 2rem; color: #3b82f6;">
+                <i class="bi bi-shop"></i>
               </div>
+              <div class="flex-grow-1">
+                <h6 class="mb-1">Merchant Dashboard</h6>
+                <small class="text-muted">Manage your store, products, and orders</small>
+              </div>
+              <span class="role-badge merchant">Merchant</span>
             </div>
-          </div>
+          </a>
 
-          <div class="card controls-card">
-            <div>
-              <p class="muted">Total products</p>
-              <h3 id="productsCount">0</h3>
+          <!-- Admin Role -->
+          <a href="#" class="list-group-item list-group-item-action role-option" data-role="admin">
+            <div class="d-flex align-items-center">
+              <div class="icon me-3" style="font-size: 2rem; color: #ef4444;">
+                <i class="bi bi-shield-check"></i>
+              </div>
+              <div class="flex-grow-1">
+                <h6 class="mb-1">Admin Panel</h6>
+                <small class="text-muted">Full platform control and analytics</small>
+              </div>
+              <span class="role-badge admin">Admin</span>
             </div>
-            <div>
-              <p class="muted">Merchant ID</p>
-              <h4 id="merchantIdLabel">–</h4>
-            </div>
-            <div>
-              <p class="muted">Store ID</p>
-              <h4 id="storeIdLabel">–</h4>
-            </div>
-          </div>
+          </a>
 
-          <div class="card table-card">
-            <div class="table-responsive">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Product</th>
-                    <th>Description</th>
-                    <th>Variants</th>
-                    <th>Created</th>
-                    <th style="width:200px;">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="productsTableBody">
-                  <tr>
-                    <td colspan="5" class="empty-row">Connect your merchant account to load products.</td>
-                  </tr>
-                </tbody>
-              </table>
+          <!-- Customer Role -->
+          <a href="#" class="list-group-item list-group-item-action role-option" data-role="customer">
+            <div class="d-flex align-items-center">
+              <div class="icon me-3" style="font-size: 2rem; color: #10b981;">
+                <i class="bi bi-cart"></i>
+              </div>
+              <div class="flex-grow-1">
+                <h6 class="mb-1">Customer View</h6>
+                <small class="text-muted">Browse and shop products</small>
+              </div>
+              <span class="role-badge customer">Customer</span>
             </div>
-            <div id="productsEmptyState" class="empty-state hidden">
-              <h3>No products yet</h3>
-              <p>Add your first product to start listing variants and inventory.</p>
-              <button class="btn primary" id="productsEmptyPrimaryBtn">Create product</button>
-            </div>
-          </div>
-        </section>
+          </a>
 
-        <!-- PRODUCT DETAILS -->
-        <section id="productDetailsSection" class="content-section hidden">
-          <div class="section-heading">
-            <div>
-              <button class="btn ghost" id="backToProductsBtn">← Products</button>
-              <p class="subtitle">Variants</p>
-              <h2 id="selectedProductTitle">Choose a product</h2>
-            </div>
-            <div class="section-heading__actions">
-              <button class="btn" id="refreshProductDetailsBtn">Refresh</button>
-              <button class="btn primary" id="addProductDetailBtn">Add Variant</button>
-            </div>
-          </div>
+        </div>
+      </div>
 
-          <div class="card product-highlight">
-            <div class="product-highlight__media">
-              <img id="selectedProductImage" src="" alt="Product image">
-            </div>
-            <div class="product-highlight__body">
-              <p class="muted">Product ID</p>
-              <h4 id="selectedProductId">–</h4>
-              <p id="selectedProductDescription" class="muted mt-2"></p>
-            </div>
-          </div>
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      </div>
 
-          <div class="card table-card">
-            <div class="table-responsive">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Serial</th>
-                    <th>Price</th>
-                    <th>Quantity</th>
-                    <th>Description</th>
-                    <th style="width:200px;">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="productDetailsTableBody">
-                  <tr>
-                    <td colspan="5" class="empty-row">Select a product to view its variants.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div id="productDetailsEmptyState" class="empty-state hidden">
-              <h3>No variants yet</h3>
-              <p>Create a variant to begin stocking inventory for this product.</p>
-              <button class="btn primary" id="productDetailsEmptyBtn">Create variant</button>
-            </div>
-          </div>
-        </section>
-
-        <!-- INVENTORY -->
-        <section id="inventorySection" class="content-section hidden">
-          <div class="section-heading">
-            <div>
-              <button class="btn ghost" id="backToProductDetailsBtn">← Variants</button>
-              <p class="subtitle">Inventory</p>
-              <h2 id="inventoryHeaderName">Variant inventory</h2>
-            </div>
-            <div class="section-heading__actions">
-              <button class="btn" id="refreshInventoryBtn">Refresh</button>
-            </div>
-          </div>
-
-          <div class="summary-grid">
-            <div class="summary-card">
-              <p>Total units</p>
-              <h3 id="inventoryTotal">0</h3>
-            </div>
-            <div class="summary-card">
-              <p>Available</p>
-              <h3 id="inventoryAvailable">0</h3>
-            </div>
-            <div class="summary-card">
-              <p>Reserved</p>
-              <h3 id="inventoryReserved">0</h3>
-            </div>
-          </div>
-
-          <div class="card table-card">
-            <div class="table-responsive">
-              <table>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Serial / Notes</th>
-                    <th>Created</th>
-                    <th>Status</th>
-                    <th style="width:140px;">Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="inventoryTableBody">
-                  <tr>
-                    <td colspan="5" class="empty-row">Choose a variant to see inventory.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div id="inventoryEmptyState" class="empty-state hidden">
-              <h3>No inventory records</h3>
-              <p>Use the stock form below to set an initial quantity.</p>
-            </div>
-          </div>
-
-          <div class="card form-card">
-            <div>
-              <h3>Update stock</h3>
-              <p class="muted">The current API exposes quantity-based stock management. Set the new available quantity for this product detail below.</p>
-            </div>
-            <form id="addInventoryForm">
-              <label for="inventoryQuantityInput">New available quantity</label>
-              <input type="number" min="0" id="inventoryQuantityInput" required placeholder="e.g. 25">
-              <button class="btn primary" type="submit">Save quantity</button>
-            </form>
-          </div>
-        </section>
-      </main>
     </div>
   </div>
+</div>
 
-  <!-- PRODUCT MODAL -->
-  <div class="modal" id="productModal" aria-hidden="true">
-    <div class="modal__dialog">
-      <header class="modal__header">
-        <h2 id="productModalTitle">Add product</h2>
-        <button class="icon-button" data-close-modal="productModal">×</button>
-      </header>
-      <form id="addProductForm">
-        <input type="hidden" id="productIdField">
-        <label>Product name
-          <input type="text" id="productNameInput" required placeholder="Realme 8">
-        </label>
-        <label>Description
-          <textarea id="productDescriptionInput" rows="3" placeholder="Short description"></textarea>
-        </label>
-        <label>Image URL (optional)
-          <input type="url" id="productImageUrlInput" placeholder="https://...">
-        </label>
-        <label>Upload image (preferred)
-          <input type="file" id="productImageFileInput" accept="image/*">
-        </label>
-        <div class="image-preview">
-          <img id="productImagePreview" src="" alt="Preview">
+
+    <div class="container-fluid">
+
+        <!-- ================= NAVIGATION ================= -->
+        <div class="card sidebar-card" id="sidebarNav">
+            <div class="card-body" id="sidebarMenu">
+                <div class="sidebar-header">
+                    <div class="sidebar-title-wrapper">
+                        <i class="bi bi-list-ul sidebar-icon"></i>
+                        <h5 class="sidebar-title">Navigation Menu</h5>
+                    </div>
+                </div>
+                <ul class="nav nav-pills flex-column nav-fill">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-target="Dashboard" aria-current="page" href="#">
+                            <div class="nav-link-content">
+                                <i class="bi bi-speedometer2 nav-icon"></i>
+                                <span class="nav-text">Dashboard</span>
+                            </div>
+                            <div class="nav-indicator"></div>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-target="Products" href="#">
+                            <div class="nav-link-content">
+                                <i class="bi bi-box-seam nav-icon"></i>
+                                <span class="nav-text">Products</span>
+                            </div>
+                            <div class="nav-indicator"></div>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-target="Orders" href="#">
+                            <div class="nav-link-content">
+                                <i class="bi bi-cart-check nav-icon"></i>
+                                <span class="nav-text">Orders</span>
+                            </div>
+                            <div class="nav-indicator"></div>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-target="Inventory" href="#">
+                            <div class="nav-link-content">
+                                <i class="bi bi-clipboard-data nav-icon"></i>
+                                <span class="nav-text">Inventory</span>
+                            </div>
+                            <div class="nav-indicator"></div>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-target="Category" href="#">
+                            <div class="nav-link-content">
+                                <i class="bi bi-folder nav-icon"></i>
+                                <span class="nav-text">Category</span>
+                            </div>
+                            <div class="nav-indicator"></div>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-target="Subcategory" href="#">
+                            <div class="nav-link-content">
+                                <i class="bi bi-folder2 nav-icon"></i>
+                                <span class="nav-text">Subcategory</span>
+                            </div>
+                            <div class="nav-indicator"></div>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-target="Customer" href="#">
+                            <div class="nav-link-content">
+                                <i class="bi bi-people nav-icon"></i>
+                                <span class="nav-text">Customer</span>
+                            </div>
+                            <div class="nav-indicator"></div>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-target="AttributeMeasure" href="#">
+                            <div class="nav-link-content">
+                                <i class="bi bi-tags nav-icon"></i>
+                                <span class="nav-text">Attributes & Measures</span>
+                            </div>
+                            <div class="nav-indicator"></div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
-        <label>Type / Subcategory ID
-          <select id="productTypeSelect" required>
-            <option value="">Loading types…</option>
-          </select>
-        </label>
-        <label>Store ID
-          <input type="number" min="1" id="productStoreInput" required placeholder="Store identifier">
-        </label>
-        <div class="modal__actions">
-          <button class="btn ghost" type="button" data-close-modal="productModal">Cancel</button>
-          <button class="btn primary" type="submit" id="productModalSubmit">Save</button>
+
+        <!-- ================= MAIN CONTENT ================= -->
+        <div class="card main-content-card" id="mainContentCard">
+
+            <!-- Content dynamically loaded via JS -->
+            <div class="card-body content-wrapper" id="dynamicContentContainer">
+                <!-- Dashboard, Customer, Category, Subcategory content will be loaded here -->
+            </div>
+
+            <!-- ================= PRODUCT WIZARD ================= -->
+            <div class="card-body wizard-wrapper" id="productWizardContainer">
+
+                <!-- STEP 1: Product Basic Info -->
+                <div class="card wizard-card active" id="productStep1">
+
+                    <!-- STEP 1 Header -->
+                    <div class="card-header wizard-header">
+                        <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Add Product - Basic Information</h5>
+                    </div>
+
+                    <!-- STEP 1 Body -->
+                    <div class="card-body active wizard-body" id="productStep1Body">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label for="productName" class="form-label">Product Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-lg" name="productName" id="productName"
+                                    placeholder="Enter product name" />
+                            </div>
+                            <div class="col-md-6">
+                                <label for="price" class="form-label">Price <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="text" class="form-control form-control-lg" name="price" id="price" placeholder="0.00" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-4 mt-2">
+                            <div class="col-md-6">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control form-control-lg" name="description" id="description" rows="4"
+                                    placeholder="Enter product description"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="quantity" class="form-label">Quantity <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control form-control-lg" name="quantity" id="quantity"
+                                    placeholder="Enter quantity" min="0" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 1 Footer -->
+                    <div class="card-footer wizard-footer">
+                        <button type="button" class="btn btn-primary btn-lg" id="nextStep1">
+                            Next <i class="bi bi-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- end of 1 -->
+
+                <!-- STEP 2: Product Images -->
+                <div class="card wizard-card" id="productStep2">
+
+                    <!-- STEP 2 Header -->
+                    <div class="card-header wizard-header">
+                        <h5 class="mb-0"><i class="bi bi-images me-2"></i>Add Product - Images</h5>
+                    </div>
+
+                    <!-- STEP 2 Body -->
+                    <div class="card-body wizard-body" id="productStep2Body">
+                        <label for="input-pd" class="form-label form-label-lg" id="aaa">
+                            Product Images <span class="text-muted">(Multiple images allowed)</span>
+                        </label>
+                        <input id="input-pd" name="productImages[]" accept="image/*" type="file" multiple>
+                    </div>
+
+                    <!-- STEP 2 Footer -->
+                    <div class="card-footer wizard-footer d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary btn-lg" id="prevStep1">
+                            <i class="bi bi-arrow-left me-2"></i>Previous
+                        </button>
+                        <button type="button" class="btn btn-primary btn-lg" id="nextStep2">
+                            Next <i class="bi bi-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- end of 2 -->
+
+                <!-- STEP 3: Product Category & Type -->
+                <div class="card wizard-card" id="productStep3">
+
+                    <!-- STEP 3 Header -->
+                    <div class="card-header wizard-header">
+                        <h5 class="mb-0"><i class="bi bi-tags me-2"></i>Add Product - Category & Attributes</h5>
+                    </div>
+
+                    <!-- STEP 3 Body -->
+                    <div class="card-body wizard-body" id="productStep3Body">
+                        <div class="row g-4">
+
+                            <!-- Category Selection -->
+                            <div class="col-md-6">
+                                <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-lg" name="category" id="category">
+                                    <option value="" selected disabled hidden>Choose Category</option>
+                                    <option value="electronics">Electronics</option>
+                                    <option value="fashion">Fashion</option>
+                                    <option value="home-furniture">Home & Furniture</option>
+                                    <option value="beauty-care">Beauty & Personal Care</option>
+                                    <option value="sports-outdoors">Sports & Outdoors</option>
+                                    <option value="groceries">Groceries & Essentials</option>
+                                    <option value="books-stationery">Books & Stationery</option>
+                                    <option value="toys-kids">Toys & Kids</option>
+                                    <option value="automotive">Automotive</option>
+                                    <option value="health-wellness">Health & Wellness</option>
+                                </select>
+                            </div>
+
+                            <!-- Type Selection (depends on category) -->
+                            <div class="col-md-6">
+                                <label for="type" class="form-label">Type <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-lg" name="type" id="type">
+                                    <option value="" selected disabled hidden>Choose Type</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Attributes Row -->
+                        <div class="row g-4 mt-2" id="attributesRow"></div>
+                    </div>
+
+                    <!-- STEP 3 Footer -->
+                    <div class="card-footer wizard-footer d-flex justify-content-between">
+                        <button type="button" class="btn btn-outline-secondary btn-lg" id="prevStep2">
+                            <i class="bi bi-arrow-left me-2"></i>Previous
+                        </button>
+                        <button type="submit" class="btn btn-success btn-lg" id="add">
+                            <i class="bi bi-check-circle me-2"></i>Add Product
+                        </button>
+                    </div>
+                </div>
+                <!-- end of 3 -->
+
+            </div>
+            <!-- ===== END PRODUCT WIZARD ===== -->
+
         </div>
-      </form>
+        <!-- ===== END MAIN CONTENT ===== -->
+
     </div>
-  </div>
-
-  <!-- PRODUCT DETAIL MODAL -->
-  <div class="modal" id="productDetailModal" aria-hidden="true">
-    <div class="modal__dialog">
-      <header class="modal__header">
-        <h2 id="detailModalTitle">Add variant</h2>
-        <button class="icon-button" data-close-modal="productDetailModal">×</button>
-      </header>
-      <form id="addProductDetailForm">
-        <input type="hidden" id="productDetailIdField">
-        <label>Serial number
-          <input type="text" id="detailSerialInput" required placeholder="RM8-128-8-0001">
-        </label>
-        <label>Price
-          <input type="number" step="0.01" min="0" id="detailPriceInput" required placeholder="499.99">
-        </label>
-        <label>Quantity available
-          <input type="number" min="0" id="detailQuantityInput" required placeholder="20">
-        </label>
-        <label>Description
-          <textarea id="detailDescriptionInput" rows="3" placeholder="Variant description"></textarea>
-        </label>
-        <div class="attributes-header">
-          <div>
-            <h4>Attributes (optional)</h4>
-            <p class="muted">Select attribute + measure unit pairs fetched from the backend.</p>
-          </div>
-          <button type="button" class="btn ghost" id="addAttributeRowBtn">Add attribute</button>
-        </div>
-        <div id="detailAttributesWrapper" class="attributes-wrapper"></div>
-        <div class="modal__actions">
-          <button class="btn ghost" type="button" data-close-modal="productDetailModal">Cancel</button>
-          <button class="btn primary" type="submit" id="detailModalSubmit">Save variant</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <div id="toastContainer" class="toast-container"></div>
-
-  <script src="app.js" defer></script>
+    <!-- ===== END CONTAINER ===== -->
+   <script src="JS/jquery.js"></script>
+  <script src="JS/Auth.js"></script>
+        <script src="bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/kartik-v/bootstrap-fileinput@5.5.0/js/fileinput.min.js"></script>
+    <script src="JS/merchant.js"></script>
 </body>
+
 </html>
