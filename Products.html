@@ -37,6 +37,29 @@
 
         <div id="pageStatus" class="status-message status-info" role="alert" style="display:none;"></div>
 
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="row g-3 align-items-center">
+              <div class="col-md-4">
+                <label class="form-label">Search</label>
+                <input type="text" id="searchProducts" class="form-control" placeholder="Search by name">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Page</label>
+                <input type="number" id="pageNumber" class="form-control" value="1" min="1">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Page Size</label>
+                <select id="pageSize" class="form-select">
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-body">
             <div class="table-responsive">
@@ -44,15 +67,21 @@
                 <thead>
                   <tr>
                     <th>ID</th>
+                    <th>Image</th>
                     <th>Name</th>
                     <th>Price</th>
-                    <th>Quantity</th>
+                    <th>Subcategory</th>
+                    <th>Type</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="productsTableBody">
-                  <tr><td colspan="4" class="text-center">Loading...</td></tr>
+                  <tr><td colspan="7" class="text-center">Loading...</td></tr>
                 </tbody>
               </table>
+            </div>
+            <div class="d-flex justify-content-end mt-2">
+              <small id="paginationInfo" class="text-muted"></small>
             </div>
           </div>
         </div>
@@ -62,7 +91,7 @@
 
   <script src="JS/jquery.js"></script>
   <script src="bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
-  <script src="JS/merchant-pages.js"></script>
+  <script src="JS/merchant-crud.js"></script>
 </body>
 </html>
 <!DOCTYPE html>
