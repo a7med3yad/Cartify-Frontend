@@ -413,7 +413,7 @@ const MerchantApp = (() => {
       const href = $link.attr('href') || '';
 
       // Allow normal navigation for real pages (e.g., products.html, product-details.html)
-      if ((!target || target === '') && href && href.endsWith('.html')) {
+      if (href && href.endsWith('.html')) {
         return; // let the browser navigate
       }
 
