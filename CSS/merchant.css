@@ -125,6 +125,63 @@
   color: #1d4ed8;
 }
 
+/* Layout for split pages */
+.merchant-shell {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.sidebar {
+  background: #0f172a;
+  color: #fff;
+  min-height: 100vh;
+  padding: 1.5rem 1rem;
+}
+
+.sidebar-header {
+  margin-bottom: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.sidebar .nav-link {
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 0.25rem;
+}
+
+.sidebar .nav-link.active,
+.sidebar .nav-link:hover {
+  background: rgba(16, 185, 129, 0.2);
+  color: #22c55e;
+}
+
+.status-message {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  margin-bottom: 1rem;
+}
+
+.status-success {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.status-error {
+  background: #fef2f2;
+  border-color: #fecdd3;
+  color: #b91c1c;
+}
+
+.status-info {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
 .merchant-api-panel .list-group {
   max-height: 260px;
   overflow-y: auto;

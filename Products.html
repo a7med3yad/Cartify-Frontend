@@ -1,5 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cartify | Products</title>
+  <link rel="stylesheet" href="bootstrap-5.3.8-dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="CSS/merchant.css">
+</head>
+<body data-page="products">
+  <div class="container-fluid merchant-shell">
+    <div class="row flex-nowrap">
+      <aside class="col-12 col-md-3 col-lg-2 sidebar">
+        <div class="sidebar-header">
+          <h5>Cartify Admin</h5>
+        </div>
+        <nav class="nav flex-column">
+          <a class="nav-link" href="dashboard.html">Dashboard</a>
+          <a class="nav-link active" href="products.html">Products</a>
+          <a class="nav-link" href="product-details.html">Product Details</a>
+          <a class="nav-link" href="Orders.html">Orders</a>
+          <a class="nav-link" href="Inventory.html">Inventory</a>
+          <a class="nav-link" href="Category.html">Category</a>
+          <a class="nav-link" href="Sub-Category.html">Subcategory</a>
+          <a class="nav-link" href="User.html">Customer</a>
+          <a class="nav-link" href="AttributeMeasure.html">Attributes &amp; Measures</a>
+        </nav>
+      </aside>
+      <main class="col py-4 px-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h2 class="mb-0">Products</h2>
+            <small class="text-muted">Manage your products</small>
+          </div>
+          <a class="btn btn-success" href="add-product.html">Add Product</a>
+        </div>
+
+        <div id="pageStatus" class="status-message status-info" role="alert" style="display:none;"></div>
+
+        <div class="card">
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-striped align-middle">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                  </tr>
+                </thead>
+                <tbody id="productsTableBody">
+                  <tr><td colspan="4" class="text-center">Loading...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="JS/jquery.js"></script>
+  <script src="bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js"></script>
+  <script src="JS/merchant-pages.js"></script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
 
 <head>
   <meta charset="UTF-8" />
